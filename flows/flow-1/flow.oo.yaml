@@ -1,0 +1,402 @@
+nodes:
+  - node_id: +value#2
+    title: "source"
+    values:
+      - handle: bookSource
+        json_schema:
+          type: string
+          ui:widget: file
+        value: /oomol-driver/oomol-storage/5 草船借箭.md
+      - handle: bookName
+        json_schema:
+          type: string
+        value: 草船借箭
+      - handle: API_KEY
+        json_schema:
+          contentMediaType: oomol/secret
+          type: string
+        value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+      - handle: outputDir
+        json_schema:
+          type: string
+          ui:widget: dir
+        value: /oomol-driver/oomol-storage/output2
+  - node_id: LLM#1
+    title: "generateScript"
+    inputs_from:
+      - handle: input
+        from_node:
+          - node_id: +value#2
+            output_handle: bookSource
+      - handle: model
+        value:
+          model: oomol-chat
+          temperature: 0
+          top_p: 0.5
+          max_tokens: 4096
+      - handle: messages
+        value:
+          - role: system
+            content: |-
+              你是一个专业的儿童教育内容创作者，需要将小学课文{{input}}改编为适合漫画风格的视频解说脚本。
+
+              要求：
+              1. 将故事分解为3-5个关键场景
+              2. 每个场景包含：场景描述、解说词、视觉提示、持续时长
+              3. 语言要生动有趣，适合小学生理解
+              4. 解说词要简洁明了，每段30-50字
+              5. 视觉提示要详细描述画面内容，便于后续图片生成
+
+              严格按照以下格式输出，不要添加其他内容：
+
+              场景1:
+              描述: [场景描述]
+              解说词: [解说内容]
+              视觉提示: [画面描述]
+              时长: [秒数]
+
+              场景2:
+              描述: [场景描述]
+              解说词: [解说内容]
+              视觉提示: [画面描述]
+              时长: [秒数]
+
+              请基于输入的课文内容生成脚本。
+        schema_overrides:
+          - schema:
+              type: array
+    task: llm::LLM
+  - node_id: +typescript#3
+    title: "parseScript"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: scriptText
+          description: Input
+          json_schema:
+            type: string
+          nullable: true
+      outputs_def:
+        - handle: scenes
+          description: Output
+          json_schema:
+            type: array
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#1.ts
+    inputs_from:
+      - handle: scriptText
+        value:
+        from_node:
+          []
+  - node_id: +typescript#1
+    node_type: task_node
+    title: "audio"
+    icon: ":skill-icons:typescript:"
+    inputs_from:
+      - handle: scenes
+        from_node:
+          - node_id: +typescript#3
+            output_handle: scenes
+      - handle: API_KEY
+        value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+        from_node:
+          - node_id: +value#2
+            output_handle: API_KEY
+      - handle: outputDir
+        from_node:
+          - node_id: +value#2
+            output_handle: outputDir
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: scenes
+          description: Output
+          json_schema:
+            type: array
+          nullable: false
+        - handle: API_KEY
+          json_schema:
+            contentMediaType: oomol/secret
+            type: string
+          nullable: false
+        - handle: outputDir
+          json_schema:
+            {}
+      outputs_def:
+        - handle: audioAssets
+          description: Output
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                sceneId:
+                  type: number
+                filePath:
+                  type: string
+                duration:
+                  type: number
+                transcript:
+                  type: string
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#2.ts
+          spawn: false
+  - node_id: +typescript#2
+    node_type: task_node
+    title: "images"
+    icon: ":skill-icons:typescript:"
+    inputs_from:
+      - handle: scenes
+        from_node:
+          - node_id: +typescript#3
+            output_handle: scenes
+      - handle: API_KEY
+        value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+        from_node:
+          - node_id: +value#2
+            output_handle: API_KEY
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage/output2
+        from_node:
+          - node_id: +value#2
+            output_handle: outputDir
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: scenes
+          description: Output
+          json_schema:
+            type: array
+          nullable: false
+        - handle: API_KEY
+          json_schema:
+            contentMediaType: oomol/secret
+            type: string
+          nullable: false
+        - handle: outputDir
+          json_schema:
+            type: string
+            ui:widget: dir
+      outputs_def:
+        - handle: imageAssets
+          description: Output
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                sceneId:
+                  type: number
+                filePath:
+                  type: string
+                prompt:
+                  type: string
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#3.ts
+          spawn: false
+  - node_id: +typescript#6
+    title: "subtitles"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: audioAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                sceneId:
+                  type: number
+                filePath:
+                  type: string
+                duration:
+                  type: number
+                transcript:
+                  type: string
+          nullable: false
+          description: Output
+        - handle: scenes
+          json_schema:
+            type: array
+          nullable: true
+          description: Output
+        - handle: outputDir
+          json_schema:
+            {}
+      outputs_def:
+        - handle: subtitleAssets
+          json_schema:
+            type: array
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#6.ts
+    inputs_from:
+      - handle: scenes
+        value:
+        from_node:
+          - node_id: +typescript#3
+            output_handle: scenes
+      - handle: audioAssets
+        from_node:
+          - node_id: +typescript#1
+            output_handle: audioAssets
+      - handle: outputDir
+        from_node:
+          - node_id: +value#2
+            output_handle: outputDir
+  - node_id: +typescript#7
+    node_type: task_node
+    title: "video"
+    icon: ":skill-icons:typescript:"
+    inputs_from:
+      - handle: scenes
+        from_node:
+          - node_id: +typescript#3
+            output_handle: scenes
+      - handle: audioAssets
+        from_node:
+          - node_id: +typescript#1
+            output_handle: audioAssets
+      - handle: imageAssets
+        from_node:
+          - node_id: +typescript#2
+            output_handle: imageAssets
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage
+        from_node:
+          - node_id: +value#2
+            output_handle: outputDir
+      - handle: subtitleAssets
+        from_node:
+          - node_id: +typescript#6
+            output_handle: subtitleAssets
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: scenes
+          json_schema:
+            type: array
+          nullable: false
+          description: Output
+        - handle: imageAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                sceneId:
+                  type: number
+                filePath:
+                  type: string
+                prompt:
+                  type: string
+          nullable: false
+          description: Output
+        - handle: outputDir
+          json_schema:
+            type: string
+            ui:widget: dir
+          nullable: false
+        - handle: audioAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+              properties:
+                sceneId:
+                  type: number
+                filePath:
+                  type: string
+                duration:
+                  type: number
+                transcript:
+                  type: string
+          nullable: false
+          description: Output
+        - handle: subtitleAssets
+          json_schema:
+            type: array
+          nullable: false
+      outputs_def:
+        - handle: videoAsset
+          description: Output
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              filePath:
+                type: string
+              duration:
+                type: number
+              resolution:
+                type: string
+              fileSize:
+                type: number
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#7.ts
+          spawn: false
+  - node_id: video_preview#1
+    title: "Video preview #1"
+    inputs_from:
+      - handle: video_path
+        from_node:
+          - node_id: +typescript#8
+            output_handle: output
+    task: oomol-preview::video_preview
+  - node_id: +typescript#8
+    title: "extractor"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: videoAsset
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              filePath:
+                type: string
+              duration:
+                type: number
+              resolution:
+                type: string
+              fileSize:
+                type: number
+          nullable: false
+          description: Output
+      outputs_def:
+        - handle: output
+          description: Output
+          json_schema:
+            type: string
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#4.ts
+    inputs_from:
+      - handle: videoAsset
+        from_node:
+          - node_id: +typescript#7
+            output_handle: videoAsset

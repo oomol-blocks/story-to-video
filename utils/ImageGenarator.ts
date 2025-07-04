@@ -81,8 +81,11 @@ export class ImageGenerator {
 
         const urlencoded = new URLSearchParams();
         urlencoded.append("prompt", prompt);
-        urlencoded.append("model", "gpt-image-1");
-        urlencoded.append("size", "1024x1024");
+        urlencoded.append("model", "dall-e-3");
+        urlencoded.append("size", "1024x1792");
+        urlencoded.append("n", "1");
+        urlencoded.append("response_format", "b64_json");
+        urlencoded.append("stype", "vivid");
 
         const response = await fetch("https://aigptx.top/v1/images/generations", {
             method: 'POST',

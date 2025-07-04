@@ -11,6 +11,7 @@ export interface AudioAsset {
     filePath: string;
     duration: number;
     transcript: string;
+    sentences: string[];
 }
 
 export interface AudioGeneratorInputs {
@@ -56,7 +57,8 @@ export class AudioGenerator {
                     sceneId: scene.id,
                     filePath: audioFile,
                     duration: actualDuration,
-                    transcript: scene.dialogue
+                    transcript: scene.dialogue,
+                    sentences: []
                 });
 
                 const progress = ((i + 1) / scenes.length) * 100;

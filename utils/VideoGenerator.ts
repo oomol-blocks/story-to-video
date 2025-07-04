@@ -37,6 +37,8 @@ export class VideoGenerator extends FFmpegExecutor {
 
         const startTime = Date.now();
         const { scenes, audioAssets, imageAssets, subtitleAssets, outputDir } = params;
+
+        console.log(scenes, audioAssets, imageAssets, subtitleAssets)
         const videoSegments: string[] = [];
 
         // 确保输出目录存在
@@ -85,11 +87,7 @@ export class VideoGenerator extends FFmpegExecutor {
                 '-b:a', '128k',
                 '-pix_fmt', 'yuv420p',
                 '-r', '25',
-                '-vf', [
-                    'scale=1080:1080:force_original_aspect_ratio=decrease',
-                    'pad=1080:1920:-1:-1:color=black',
-                    `subtitles='${subtitleAsset.filePath.replace(/'/g, "\\'")}':force_style='FontName=SimHei,FontSize=24,PrimaryColour=&Hffffff,OutlineColour=&H000000,Outline=2'`
-                ].join(','),
+                '-vf', `subtitles='${subtitleAsset.filePath.replace(/'/g, "\\'")}'`,
                 '-t', audioAsset.duration.toString(),
                 '-shortest',
                 segmentOutput
@@ -140,7 +138,7 @@ export class VideoGenerator extends FFmpegExecutor {
             videoAsset: {
                 filePath: finalOutputPath,
                 duration: totalDuration,
-                resolution: "1080x1920",
+                resolution: "1024x1792",
                 fileSize: stats.size
             }
         };

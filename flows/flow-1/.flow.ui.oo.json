@@ -12,8 +12,8 @@
     "LLM#1": {
       "rfNode": {
         "position": {
-          "x": 332.0485864905031,
-          "y": -536.226700649269
+          "x": 218.61161431566694,
+          "y": -346.1670982864209
         }
       },
       "sections": {
@@ -26,11 +26,11 @@
       }
     },
     "+typescript#3": {
-      "contentWidth": 561.1539306640625,
+      "contentWidth": 400.2618212958913,
       "rfNode": {
         "position": {
-          "x": 944.9871575046261,
-          "y": -536.226700649269
+          "x": 732.0440693869515,
+          "y": -350.5765948302205
         }
       },
       "sections": {
@@ -43,110 +43,6 @@
         },
         "scriptlet": {
           "cardCollapsed": true
-        }
-      }
-    },
-    "+typescript#1": {
-      "contentWidth": 492.92060767990847,
-      "rfNode": {
-        "position": {
-          "x": 1715.0040344219422,
-          "y": 122.79359904786503
-        }
-      },
-      "sections": {
-        "outputs": {
-          "collapsed": {
-            "metadata": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
-    "+typescript#2": {
-      "contentWidth": 485.41009568523305,
-      "rfNode": {
-        "position": {
-          "x": 1715.0040344219422,
-          "y": -276.593600855183
-        }
-      },
-      "sections": {
-        "outputs": {
-          "collapsed": {
-            "assets": {
-              "[]": true
-            },
-            "metadata": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
-    "+typescript#6": {
-      "contentWidth": 498.48453657504047,
-      "rfNode": {
-        "position": {
-          "x": 2459.3811903466976,
-          "y": 376.03462637160084
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "assets": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "metadata": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
-    "+typescript#7": {
-      "contentWidth": 450,
-      "rfNode": {
-        "position": {
-          "x": 3303.028449503655,
-          "y": -190.49755793732183
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "assets": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "videoAsset": {
-              "[]": false
-            }
-          }
         }
       }
     },
@@ -154,8 +50,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 4475.506655161144,
-          "y": -190.49755793732183
+          "x": 2598.9738226145582,
+          "y": 50.810988938899506
         }
       }
     },
@@ -163,8 +59,30 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 3870.8564096897107,
-          "y": -190.49755793732183
+          "x": 2017.077267877441,
+          "y": 50.810988938899506
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "processor#1": {
+      "rfNode": {
+        "position": {
+          "x": 1331.4023271078177,
+          "y": 40.35334015508316
+        }
+      },
+      "sections": {
+        "outputs": {
+          "collapsed": {
+            "videoAsset": {
+              "[]": true
+            }
+          }
         }
       }
     }

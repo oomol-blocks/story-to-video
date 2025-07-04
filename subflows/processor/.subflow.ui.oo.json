@@ -1,0 +1,170 @@
+{
+  "nodes": {
+    "+typescript#1": {
+      "contentWidth": 485.41009568523305,
+      "rfNode": {
+        "position": {
+          "x": 143.80492463269843,
+          "y": 27.319805254326717
+        }
+      },
+      "sections": {
+        "outputs": {
+          "collapsed": {
+            "assets": {
+              "[]": true
+            },
+            "metadata": {
+              "[]": true
+            }
+          }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#2": {
+      "contentWidth": 492.92060767990847,
+      "rfNode": {
+        "position": {
+          "x": 126.76967616442681,
+          "y": 461.0126539462304
+        }
+      },
+      "sections": {
+        "outputs": {
+          "collapsed": {
+            "metadata": {
+              "[]": true
+            }
+          }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#3": {
+      "contentWidth": 623.6739034218134,
+      "rfNode": {
+        "position": {
+          "x": 2724.0007805502437,
+          "y": 883.1783638888863
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "assets": {
+              "[]": true
+            }
+          }
+        },
+        "outputs": {
+          "collapsed": {
+            "metadata": {
+              "[]": true
+            }
+          }
+        }
+      }
+    },
+    "+typescript#4": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 3441.846370496803,
+          "y": 423.8138976617572
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "assets": {
+              "[]": true
+            },
+            "imageAssets": {
+              "[]": true
+            }
+          }
+        },
+        "outputs": {
+          "collapsed": {
+            "videoAsset": {
+              "[]": false
+            }
+          }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#6": {
+      "contentWidth": 628.1942527632791,
+      "rfNode": {
+        "position": {
+          "x": 671.4883348619558,
+          "y": 1057.5692736924846
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "LLM#2": {
+      "rfNode": {
+        "position": {
+          "x": 1370.6164046199535,
+          "y": 1057.5692736924846
+        }
+      },
+      "sections": {
+        "inputHandle": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#7": {
+      "contentWidth": 651.5604063122798,
+      "rfNode": {
+        "position": {
+          "x": 1882.7301135795653,
+          "y": 1082.0526990379738
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    }
+  },
+  "pseudoNodes": {
+    "input": {
+      "rfNode": {
+        "position": {
+          "x": -722.5179192224582,
+          "y": 264.9872129596471
+        }
+      }
+    },
+    "output": {
+      "rfNode": {
+        "position": {
+          "x": 3993.5617713956944,
+          "y": 487.94169719018225
+        }
+      }
+    }
+  }
+}

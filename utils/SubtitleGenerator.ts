@@ -78,6 +78,7 @@ export class SubtitleGenerator {
         return assHeader + assEvents;
     }
 
+    // TODO: 根据不同的尺寸，调整 marginV
     private generateAssHeader(): string {
         return `[Script Info]
 Title: Generated ASS

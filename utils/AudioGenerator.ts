@@ -25,6 +25,8 @@ export interface AudioGeneratorOutputs {
 }
 
 export class AudioGenerator {
+    private readonly BASE_URL = "https://cn2us02.opapi.win/v1/audio/speech";
+
     async generateAudio(
         params: AudioGeneratorInputs,
         context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>
@@ -93,7 +95,7 @@ export class AudioGenerator {
         urlencoded.append("response_format", "mp3");
         urlencoded.append("speed", "1");
 
-        const response = await fetch("https://cn2us02.opapi.win/v1/audio/speech", {
+        const response = await fetch(this.BASE_URL, {
             method: 'POST',
             body: urlencoded,
             headers: {

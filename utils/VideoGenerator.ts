@@ -7,6 +7,7 @@ import { SubtitleAsset } from "./SubtitleGenerator";
 import { AudioAsset } from "./AudioGenerator";
 import { ImageAsset } from "./ImageGenarator";
 import { ScriptScene } from "./ScriptParser";
+import { getVideoParamsFromImageSize, VideoParams, VideoSize, VideoSizeType } from "./constants";
 
 export interface VideoAsset {
     filePath: string;
@@ -21,6 +22,7 @@ export interface VideoGeneratorInputs {
     imageAssets: ImageAsset[];
     subtitleAssets: SubtitleAsset[];
     outputDir: string;
+    videoSize: VideoSizeType
 }
 
 export interface VideoGeneratorOutputs {
@@ -36,7 +38,7 @@ export class VideoGenerator extends FFmpegExecutor {
         context.reportProgress(0);
 
         const startTime = Date.now();
-        const { scenes, audioAssets, imageAssets, subtitleAssets, outputDir } = params;
+        const { scenes, audioAssets, imageAssets, subtitleAssets, outputDir, videoSize } = params;
 
         console.log(scenes, audioAssets, imageAssets, subtitleAssets)
         const videoSegments: string[] = [];
@@ -46,6 +48,27 @@ export class VideoGenerator extends FFmpegExecutor {
 
         // 计算总时长用于进度计算
         this.totalDuration = audioAssets.reduce((sum, asset) => sum + asset.duration, 0);
+
+        // 确定视频参数
+        let finalVideoParams: VideoParams;
+        let finalResolution: string;
+
+        if (videoSize) {
+            // 如果手动指定了视频尺寸，使用指定的尺寸
+            finalVideoParams = getVideoParamsFromImageSize(videoSize);
+            finalResolution = videoSize;
+        } else {
+            // 否则根据第一张图片的尺寸自动选择
+            const firstImageAsset = imageAssets[0];
+            if (!firstImageAsset) {
+                throw new Error('No image assets found');
+            }
+            finalVideoParams = getVideoParamsFromImageSize(firstImageAsset.resolution);
+            finalResolution = finalVideoParams.resolution;
+        }
+
+        console.log(`Using video resolution: ${finalResolution}`);
+        console.log(`Video parameters:`, finalVideoParams);
 
         // 为每个场景生成视频片段
         for (let i = 0; i < scenes.length; i++) {
@@ -74,24 +97,15 @@ export class VideoGenerator extends FFmpegExecutor {
             const segmentOutput = path.join(outputDir, `segment_${scene.id}.mp4`);
             videoSegments.push(segmentOutput);
 
-            // 生成视频片段
-            const args = [
-                '-y',
-                '-loop', '1',
-                '-i', imageAsset.filePath,
-                '-i', audioAsset.filePath,
-                '-c:v', 'libx264',
-                '-preset', 'medium',
-                '-crf', '23',
-                '-c:a', 'aac',
-                '-b:a', '128k',
-                '-pix_fmt', 'yuv420p',
-                '-r', '25',
-                '-vf', `subtitles='${subtitleAsset.filePath.replace(/'/g, "\\'")}'`,
-                '-t', audioAsset.duration.toString(),
-                '-shortest',
-                segmentOutput
-            ];
+            // 生成视频片段 - 使用动态参数
+            const args = await this.buildFFmpegArgs(
+                imageAsset.filePath,
+                audioAsset.filePath,
+                subtitleAsset.filePath,
+                segmentOutput,
+                audioAsset.duration,
+                finalVideoParams
+            );
 
             await this.runFFmpegCommand(args);
 
@@ -142,5 +156,67 @@ export class VideoGenerator extends FFmpegExecutor {
                 fileSize: stats.size
             }
         };
+    }
+
+    private async buildFFmpegArgs(
+        imagePath: string,
+        audioPath: string,
+        subtitlePath: string,
+        outputPath: string,
+        duration: number,
+        videoParams: VideoParams
+    ): Promise<string[]> {
+        // 构建视频滤镜
+        const videoFilters = [];
+        
+        // 添加缩放滤镜
+        if (videoParams.scaleFilter) {
+            videoFilters.push(videoParams.scaleFilter);
+        }
+        
+        // 添加字幕滤镜
+        videoFilters.push(`subtitles='${subtitlePath.replace(/'/g, "\\'")}'`);
+        
+        const videoFilterString = videoFilters.join(',');
+
+        const args = [
+            '-y',
+            '-loop', '1',
+            '-i', imagePath,
+            '-i', audioPath,
+            '-c:v', 'libx264',
+            '-preset', videoParams.preset,
+            '-crf', videoParams.crf.toString(),
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-b:v', videoParams.bitrate,
+            '-pix_fmt', 'yuv420p',
+            '-r', videoParams.framerate.toString(),
+            '-vf', videoFilterString,
+            '-t', duration.toString(),
+            '-shortest',
+            outputPath
+        ];
+
+        return args;
+    }
+
+    public getRecommendedVideoSize(imageAssets: ImageAsset[]): string {
+        if (imageAssets.length === 0) {
+            return VideoSize.PORTRAIT; // 默认竖屏
+        }
+
+        // 统计不同尺寸的图片数量
+        const sizeCount = imageAssets.reduce((acc, asset) => {
+            acc[asset.resolution] = (acc[asset.resolution] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        // 选择出现频率最高的尺寸
+        const mostCommonSize = Object.entries(sizeCount)
+            .sort(([, a], [, b]) => b - a)[0][0];
+
+        const videoParams = getVideoParamsFromImageSize(mostCommonSize);
+        return videoParams.resolution;
     }
 }

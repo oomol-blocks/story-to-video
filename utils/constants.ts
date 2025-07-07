@@ -1,0 +1,93 @@
+// 生成的图片尺寸
+export const DallE3ImageSize = {
+    /** 正方形 - 1024x1024 (1:1 宽高比) */
+    SQUARE: "1024x1024",
+    /** 横向长方形 - 1792x1024 (约16:9 宽高比) */
+    LANDSCAPE: "1792x1024",
+    /** 纵向长方形 - 1024x1792 (约9:16 宽高比) */
+    PORTRAIT: "1024x1792"
+} as const;
+
+export type DallE3ImageSizeType = typeof DallE3ImageSize[keyof typeof DallE3ImageSize];
+
+const VALID_DALLE3_SIZES = new Set(Object.values(DallE3ImageSize));
+
+export function isValidDallE3ImageSize3(size: string): size is DallE3ImageSizeType {
+    return VALID_DALLE3_SIZES.has(size as DallE3ImageSizeType);
+}
+
+export const VideoSize = {
+    /** 正方形 - 1080x1080 (1:1 宽高比) */
+    SQUARE: "1080x1080",
+    /** 横向长方形 - 1920x1080 (16:9 宽高比) */
+    LANDSCAPE: "1920x1080",
+    /** 纵向长方形 - 1080x1920 (9:16 宽高比) */
+    PORTRAIT: "1080x1920"
+}
+
+export type VideoSizeType = typeof VideoSize[keyof typeof VideoSize];
+
+export interface VideoParams {
+    resolution: string;
+    framerate: number;
+    crf: number;
+    preset: string;
+    bitrate: string;
+    scaleFilter?: string;
+}
+
+export const VideoParamsMap: Record<string, VideoParams> = {
+    [DallE3ImageSize.SQUARE]: {
+        resolution: VideoSize.SQUARE,
+        framerate: 25,
+        crf: 23,
+        preset: "medium",
+        bitrate: "2M",
+        scaleFilter: "scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:-1:-1:black"
+    },
+    [DallE3ImageSize.LANDSCAPE]: {
+        resolution: VideoSize.LANDSCAPE,
+        framerate: 30,
+        crf: 21,
+        preset: "medium",
+        bitrate: "4M",
+        scaleFilter: "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:-1:-1:black"
+    },
+    [DallE3ImageSize.PORTRAIT]: {
+        resolution: VideoSize.PORTRAIT,
+        framerate: 30,
+        crf: 22,
+        preset: "medium",
+        bitrate: "3M",
+        scaleFilter: "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1:black"
+    }
+};
+
+// 解析尺寸字符串
+export function parseResolution(resolution: string): { width: number; height: number } {
+    const [width, height] = resolution.split('x').map(Number);
+    return { width, height };
+}
+
+// 根据图片尺寸获取视频参数
+export function getVideoParamsFromImageSize(imageSize: string): VideoParams {
+    const params = VideoParamsMap[imageSize];
+    if (!params) {
+        console.warn(`Unknown image size: ${imageSize}, using default portrait（${DallE3ImageSize.PORTRAIT}） params`);
+        return VideoParamsMap[DallE3ImageSize.PORTRAIT];
+    }
+    return params;
+}
+
+// 获取宽高比类型
+export function getAspectRatioType(resolution: string): 'square' | 'landscape' | 'portrait' {
+    const { width, height } = parseResolution(resolution);
+    
+    if (width === height) {
+        return 'square';
+    } else if (width > height) {
+        return 'landscape';
+    } else {
+        return 'portrait';
+    }
+}

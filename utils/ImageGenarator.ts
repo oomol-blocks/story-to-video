@@ -3,16 +3,19 @@ import * as fs from "node:fs/promises";
 import path from 'path';
 
 import { ScriptScene } from "./ScriptParser";
+import { DallE3ImageSize, DallE3ImageSizeType, isValidDallE3ImageSize3 } from "./constants";
 
 export interface ImageAsset {
     sceneId: number;
     filePath: string;
     prompt: string;
+    resolution: string;
 }
 
 export interface ImageGeneratorInputs {
     scenes: ScriptScene[];
     API_KEY: string;
+    size: DallE3ImageSizeType,
     outputDir: string;
 }
 
@@ -21,6 +24,9 @@ export interface ImageGeneratorOutputs {
 }
 
 export class ImageGenerator {
+    private readonly BASE_URL = "https://aigptx.top/v1/images/generations";
+    private resolution = DallE3ImageSize.PORTRAIT as DallE3ImageSizeType;
+
     async generateImages(
         params: ImageGeneratorInputs,
         context: Context<ImageGeneratorInputs, ImageGeneratorOutputs>
@@ -28,8 +34,14 @@ export class ImageGenerator {
         console.log("Starting image generation...");
         context.reportProgress(0);
 
-        const { scenes, API_KEY, outputDir } = params;
+        const { scenes, API_KEY, outputDir, size } = params;
         const imageAssets: ImageAsset[] = [];
+
+        if (isValidDallE3ImageSize3(size)) {
+            this.resolution = size;
+        } else {
+            console.warn(`Unknown image size: ${size}, using default portrait（${DallE3ImageSize.PORTRAIT}） params`);
+        }
 
         // 确保输出目录存在
         await fs.mkdir(outputDir, { recursive: true });
@@ -53,7 +65,8 @@ export class ImageGenerator {
                 imageAssets.push({
                     sceneId: scene.id,
                     filePath: imageFile,
-                    prompt: fullPrompt
+                    prompt: fullPrompt,
+                    resolution: this.resolution
                 });
 
                 const progress = ((i + 1) / scenes.length) * 100;
@@ -82,12 +95,12 @@ export class ImageGenerator {
         const urlencoded = new URLSearchParams();
         urlencoded.append("prompt", prompt);
         urlencoded.append("model", "dall-e-3");
-        urlencoded.append("size", "1024x1792");
+        urlencoded.append("size", this.resolution);
         urlencoded.append("n", "1");
         urlencoded.append("response_format", "b64_json");
         urlencoded.append("stype", "vivid");
 
-        const response = await fetch("https://aigptx.top/v1/images/generations", {
+        const response = await fetch(this.BASE_URL, {
             method: 'POST',
             body: urlencoded,
             headers: {

@@ -45,6 +45,18 @@ export default async function (
         throw new Error('Invalid JSON output');
     }
 
+    console.log("parsed audio assets: ", params.audioAssets.map(i => {
+        const transcript = transcripts.find(script =>
+            script.sceneId === i.sceneId &&
+            script.sentences &&
+            Array.isArray(script.sentences)
+        );
+        return {
+            ...i,
+            sentences: transcript.sentences || []
+        }
+    }))
+
     return {
         audioAssets: params.audioAssets.map(i => {
             const transcript = transcripts.find(script =>

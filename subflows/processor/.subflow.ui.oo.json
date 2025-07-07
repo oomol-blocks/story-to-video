@@ -70,9 +70,6 @@
               "[]": true
             }
           }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
         }
       }
     },
@@ -104,9 +101,6 @@
               "[]": false
             }
           }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
         }
       }
     },
@@ -158,15 +152,6 @@
         "position": {
           "x": -722.5179192224582,
           "y": 264.9872129596471
-        }
-      },
-      "sections": {
-        "subflowInput": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            }
-          }
         }
       }
     },

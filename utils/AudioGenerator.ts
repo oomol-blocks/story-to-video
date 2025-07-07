@@ -46,7 +46,7 @@ export class AudioGenerator {
 
             try {
                 const audioFile = await this.generateSingleAudio(
-                    scene.dialogue,
+                    scene.narration,
                     scene.id,
                     API_KEY,
                     outputDir
@@ -59,7 +59,7 @@ export class AudioGenerator {
                     sceneId: scene.id,
                     filePath: audioFile,
                     duration: actualDuration,
-                    transcript: scene.dialogue,
+                    transcript: scene.narration,
                     sentences: []
                 });
 

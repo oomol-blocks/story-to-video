@@ -31,6 +31,23 @@ export function isValidVideoSize(size: string): size is VideoSizeType {
     return Object.values(VideoSize).includes(size as VideoSizeType);
 }
 
+/**
+ * 视频尺寸到 DALL-E 3 图像尺寸的映射
+ * 根据宽高比进行映射：
+ * - 1:1 (正方形) -> 1024x1024
+ * - 16:9 (横屏) -> 1792x1024  
+ * - 9:16 (竖屏) -> 1024x1792
+ */
+const VIDEO_TO_DALLE3_SIZE_MAP: Record<VideoSizeType, DallE3ImageSizeType> = {
+    [VideoSize.SQUARE]: DallE3ImageSize.SQUARE,       // 1080x1080 -> 1024x1024
+    [VideoSize.LANDSCAPE]: DallE3ImageSize.LANDSCAPE, // 1920x1080 -> 1792x1024
+    [VideoSize.PORTRAIT]: DallE3ImageSize.PORTRAIT    // 1080x1920 -> 1024x1792
+} as const;
+
+export function getImageSizeFromVideoSize(videoSize: VideoSizeType): DallE3ImageSizeType {
+    return VIDEO_TO_DALLE3_SIZE_MAP[videoSize];
+}
+
 export interface VideoParams {
     resolution: string;
     framerate: number;

@@ -23,6 +23,9 @@ nodes:
       - handle: imageSize
         from_flow:
           - input_handle: imageSize
+      - handle: videoSize
+        from_flow:
+          - input_handle: videoSize
     task:
       ui:
         default_width: 450
@@ -52,6 +55,18 @@ nodes:
                 - 1024x1024（1:1）
                 - 1024x1792（9:16）
                 - 1792x1024（16:9）
+          nullable: false
+        - handle: videoSize
+          json_schema:
+            enum:
+              - 1080x1080
+              - 1080x1920
+              - 1920x1080
+            ui:options:
+              labels:
+                - 1080x1080（1:1）
+                - 1080x1920（9:16）
+                - 1920x1080（16:9）
           nullable: false
       outputs_def:
         - handle: imageAssets

@@ -6,8 +6,9 @@ export default async function generateImages(
     context: Context<ImageGeneratorInputs, ImageGeneratorOutputs>
 ): Promise<ImageGeneratorOutputs> {
     // const generator = new ImageGenerator();
-    // return await generator.generateImages(params, context);
-
+    // const imageAssets = await generator.generateImages(params, context);
+    // console.log('image assets: ', imageAssets);
+    // return imageAssets;
     return {
         imageAssets: [
             {
@@ -166,5 +167,5 @@ export default async function generateImages(
                 resolution: "1024x1792"
             }
         ]
-    };
+    }
 }

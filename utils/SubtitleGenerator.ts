@@ -78,7 +78,6 @@ export class SubtitleGenerator {
         return assHeader + assEvents;
     }
 
-    // TODO: 根据不同的尺寸，调整 marginV
     private generateAssHeader(): string {
         return `[Script Info]
 Title: Generated ASS
@@ -117,7 +116,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             // 处理长句子，按最大字符数分行
             const formattedText = this.formatTextWithLineBreaks(sentence.trim());
 
-            assEvents += `Dialogue: 0,${startTime},${endTime},Default,,20,20,45,,${formattedText}\n`;
+            assEvents += `narration: 0,${startTime},${endTime},Default,,20,20,45,,${formattedText}\n`;
 
             currentTime += sentenceDuration;
         }

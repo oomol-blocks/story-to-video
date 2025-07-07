@@ -6,5 +6,7 @@ export default async function generateSubtitles(
     context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>
 ): Promise<SubtitleGeneratorOutputs> {
     const generator = new SubtitleGenerator();
-    return await generator.generateSubtitles(params, context);
+    const subtitles = await generator.generateSubtitles(params, context);
+    console.log('subtitles: ', subtitles);
+    return subtitles;
 }

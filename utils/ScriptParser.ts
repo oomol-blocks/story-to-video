@@ -3,8 +3,10 @@ import { Context } from "@oomol/types/oocana";
 export interface ScriptScene {
     id: number;
     description: string;
-    dialogue: string;
+    narration: string;
     visualPrompt: string;
+    characterTraits: string; // 人物特征
+    baseImageStyle: string; // 基础画面风格
     duration: number;
 }
 
@@ -52,18 +54,25 @@ export class ScriptParser {
         const lines = block.split('\n').map(line => line.trim()).filter(line => line);
 
         let description = '';
-        let dialogue = '';
+        let narration = '';
         let visualPrompt = '';
+        let characterTraits = '';
+        let baseImageStyle = '';
         let duration = 10; // 默认10秒
 
         for (const line of lines) {
-            if (line.startsWith('描述:')) {
-                description = line.substring(3).trim();
-            } else if (line.startsWith('解说词:')) {
-                dialogue = line.substring(4).trim();
-            } else if (line.startsWith('视觉提示:')) {
-                visualPrompt = line.substring(5).trim();
-            } else if (line.startsWith('时长:')) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('描述:')) {
+                description = trimmedLine.substring(3).trim();
+            } else if (trimmedLine.startsWith('解说词:')) {
+                narration = trimmedLine.substring(4).trim();
+            } else if (trimmedLine.startsWith('视觉提示:')) {
+                visualPrompt = trimmedLine.substring(5).trim();
+            } else if (trimmedLine.startsWith('人物特征:')) {
+                characterTraits = trimmedLine.substring(5).trim();
+            } else if (trimmedLine.startsWith('基础画面风格:')) {
+                baseImageStyle = trimmedLine.substring(7).trim();
+            } else if (trimmedLine.startsWith('时长:')) {
                 const durationMatch = line.match(/(\d+)/);
                 if (durationMatch) {
                     duration = parseInt(durationMatch[1]);
@@ -71,7 +80,7 @@ export class ScriptParser {
             }
         }
 
-        if (!description || !dialogue) {
+        if (!description || !narration) {
             console.warn(`Scene ${id} missing required fields, skipping`);
             return null;
         }
@@ -79,8 +88,10 @@ export class ScriptParser {
         return {
             id,
             description,
-            dialogue,
+            narration,
             visualPrompt,
+            characterTraits,
+            baseImageStyle,
             duration
         };
     }

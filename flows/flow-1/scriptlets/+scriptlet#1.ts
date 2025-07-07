@@ -5,45 +5,50 @@ export default async function (
     params: ScriptParserInputs,
     context: Context<ScriptParserInputs, ScriptParserOutputs>
 ): Promise<Partial<ScriptParserOutputs>> {
-    return {
-        scenes: [
-            {
-                id: 1,
-                description: '周瑜设宴邀请诸葛亮，暗中谋划',
-                dialogue: '周瑜嫉妒诸葛亮的才能，设下圈套。他假装请教："水上交战，什么武器最好？"诸葛亮微微一笑："当然是弓箭！"',
-                visualPrompt: '古色古香的军营帐篷内，周瑜举杯假笑，诸葛亮轻摇羽扇，两人中间摆着酒菜',
-                duration: 20
-            },
-            {
-                id: 2,
-                description: '周瑜刁难诸葛亮',
-                dialogue: '周瑜突然变脸："那请先生十天内造十万支箭！"诸葛亮却淡定地说："三天就够了！"周瑜暗自得意，以为诸葛亮中计了。',
-                visualPrompt: '周瑜拍案而起面露凶相，诸葛亮从容不迫地摇扇子，背景是惊讶的侍从们',
-                duration: 25
-            },
-            {
-                id: 3,
-                description: '诸葛亮准备草船',
-                dialogue: '诸葛亮找来鲁肃帮忙，准备二十条小船，扎满稻草人。鲁肃满脸疑惑："这能造箭？"诸葛亮神秘地眨眨眼："等着看好戏吧！"',
-                visualPrompt: '夜晚江边，工人们忙着扎稻草人，诸葛亮指着雾气弥漫的江面，鲁肃挠头不解',
-                duration: 30
-            },
-            {
-                id: 4,
-                description: '草船借箭',
-                dialogue: '大雾天，诸葛亮命船队擂鼓前进。曹操以为敌军来袭，急令放箭！箭如雨下，全都扎在稻草人上。诸葛亮哈哈大笑："多谢曹丞相赠箭！"',
-                visualPrompt: '浓雾中隐约可见插满箭的草船，曹操在城楼上气急败坏，诸葛亮在船头开怀大笑',
-                duration: 35
-            },
-            {
-                id: 5,
-                description: '周瑜目瞪口呆',
-                dialogue: '三天后，诸葛亮带着十万支箭归来。周瑜目瞪口呆："先生真神人也！"诸葛亮摇着羽扇："用智慧取胜，才是真本事！"',
-                visualPrompt: '军营前堆满箭支，周瑜张大嘴巴，诸葛亮潇洒转身，羽扇轻摇',
-                duration: 25
-            }
-        ]
-    }
-    // const parser = new ScriptParser()
-    // return await parser.parseScript(params, context);
+    console.log('origin text: ', params.scriptText);
+    const parser = new ScriptParser();
+    const parsedScript = await parser.parseScript(params, context);
+    console.log('parsed script: ', parsedScript)
+    return parsedScript;
+
+    // return {
+    //     scenes: [
+    //         {
+    //             id: 1,
+    //             description: '周瑜在军营中设宴，与诸葛亮商议军事',
+    //             narration: '周瑜嫉妒诸葛亮的才能，想为难他。他设下宴席，假装友好地说："军中缺箭，请先生十日内造十万支箭。"诸葛亮却笑着说："三天就够了！"',
+    //             visualPrompt: '军营大帐内，周瑜坐在主位，诸葛亮对坐。桌上摆着酒菜，帐外可见巡逻士兵。周瑜眼神狡黠，诸葛亮轻摇羽扇。',
+    //             characterTraits: '周瑜穿红色铠甲，面容英俊但眼神阴险；诸葛亮着蓝色长袍，手持羽扇，神态从容',
+    //             baseImageStyle: '古风手绘，暖色调，细节精致',
+    //             duration: 25
+    //         },
+    //         {
+    //             id: 2,
+    //             description: '诸葛亮在江边准备草船',
+    //             narration: '诸葛亮找来二十条船，每船扎满草人。鲁肃很担心："这能行吗？"诸葛亮神秘一笑："子敬且看明日好戏！"',
+    //             visualPrompt: '夜晚江边，士兵们忙着扎草人。诸葛亮站在岸边指挥，鲁肃在一旁疑惑地摸着胡子。月光照在江面上波光粼粼。',
+    //             characterTraits: '诸葛亮依然持羽扇，鲁肃穿文官服饰，圆脸微胖',
+    //             baseImageStyle: '延续古风，转为冷蓝色调表现夜晚',
+    //             duration: 20
+    //         },
+    //         {
+    //             id: 3,
+    //             description: '草船借箭的惊险过程',
+    //             narration: '第三天凌晨，江上大雾弥漫。诸葛亮命船队擂鼓呐喊，曹军以为敌军来袭，万箭齐发！箭都扎在草人上，像刺猬一样！',
+    //             visualPrompt: '浓雾中的江面，草船逼近曹营。曹军弓箭手在城墙上放箭，箭如雨下。特写草人渐渐插满箭支。',
+    //             characterTraits: '曹军士兵穿黑色铠甲，惊慌失措；诸葛亮在船头淡定微笑',
+    //             baseImageStyle: '动态感强的雾景，箭矢有运动轨迹',
+    //             duration: 30
+    //         },
+    //         {
+    //             id: 4,
+    //             description: '满载而归的胜利场景',
+    //             narration: '太阳升起时，诸葛亮带着十万支箭返回。周瑜目瞪口呆："先生真神人也！"诸葛亮摇着羽扇："略施小计而已。"',
+    //             visualPrompt: '晨光中船队靠岸，士兵们欢笑着拔箭。周瑜在岸边震惊地张大嘴，诸葛亮潇洒下船。',
+    //             characterTraits: '周瑜表情夸张，诸葛亮保持从容',
+    //             baseImageStyle: '金色晨光，欢乐氛围',
+    //             duration: 25
+    //         }
+    //     ]
+    // }
 };

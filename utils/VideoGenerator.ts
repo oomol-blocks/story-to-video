@@ -140,19 +140,33 @@ export class VideoGenerator extends FFmpegExecutor {
 
         await this.runFFmpegCommand(mergeArgs);
 
-        context.reportProgress(100);
+        context.reportProgress(95);
 
         const stats = await fs.stat(finalOutputPath);
         const processingTime = Date.now() - startTime;
         const totalDuration = audioAssets.reduce((sum, asset) => sum + asset.duration, 0);
 
+        // 清理临时文件
+        try {
+            await this.cleanupTemporaryFiles(
+                audioAssets,
+                imageAssets,
+                subtitleAssets,
+                videoSegments,
+                fileListPath
+            );
+        } catch (error) {
+            console.warn("Failed to cleanup some temporary files:", error);
+        }
+
+        context.reportProgress(100);
         console.log(`✓ Video generation completed in ${processingTime}ms`);
 
         return {
             videoAsset: {
                 filePath: finalOutputPath,
                 duration: totalDuration,
-                resolution: "1024x1792",
+                resolution: videoSize,
                 fileSize: stats.size
             }
         };
@@ -168,15 +182,15 @@ export class VideoGenerator extends FFmpegExecutor {
     ): Promise<string[]> {
         // 构建视频滤镜
         const videoFilters = [];
-        
+
         // 添加缩放滤镜
         if (videoParams.scaleFilter) {
             videoFilters.push(videoParams.scaleFilter);
         }
-        
+
         // 添加字幕滤镜
         videoFilters.push(`subtitles='${subtitlePath.replace(/'/g, "\\'")}'`);
-        
+
         const videoFilterString = videoFilters.join(',');
 
         const args = [
@@ -199,6 +213,38 @@ export class VideoGenerator extends FFmpegExecutor {
         ];
 
         return args;
+    }
+
+    private async cleanupTemporaryFiles(
+        audioAssets: AudioAsset[],
+        imageAssets: ImageAsset[],
+        subtitleAssets: SubtitleAsset[],
+        videoSegments: string[],
+        fileListPath: string
+    ): Promise<void> {
+        console.log("Cleaning up temporary files...");
+
+        const filesToDelete: string[] = [];
+
+        // 收集所有临时文件路径
+        audioAssets.forEach(asset => filesToDelete.push(asset.filePath));
+        imageAssets.forEach(asset => filesToDelete.push(asset.filePath));
+        subtitleAssets.forEach(asset => filesToDelete.push(asset.filePath));
+        videoSegments.forEach(segment => filesToDelete.push(segment));
+        filesToDelete.push(fileListPath);
+
+        // 删除文件
+        let deletedCount = 0;
+        for (const filePath of filesToDelete) {
+            try {
+                await fs.unlink(filePath);
+                deletedCount++;
+            } catch (error) {
+                console.warn(`Failed to delete temporary file: ${filePath}`, error);
+            }
+        }
+
+        console.log(`✓ Cleaned up ${deletedCount} temporary files`);
     }
 
     public getRecommendedVideoSize(imageAssets: ImageAsset[]): string {

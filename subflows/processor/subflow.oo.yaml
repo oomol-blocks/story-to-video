@@ -20,6 +20,9 @@ nodes:
           - input_handle: outputDir
         from_node:
           []
+      - handle: imageSize
+        from_flow:
+          - input_handle: imageSize
     task:
       ui:
         default_width: 450
@@ -38,6 +41,18 @@ nodes:
           json_schema:
             type: string
             ui:widget: dir
+        - handle: imageSize
+          json_schema:
+            enum:
+              - 1024x1024
+              - 1024x1792
+              - 1792x1024
+            ui:options:
+              labels:
+                - 1024x1024（1:1）
+                - 1024x1792（9:16）
+                - 1792x1024（16:9）
+          nullable: false
       outputs_def:
         - handle: imageAssets
           description: Output
@@ -46,13 +61,6 @@ nodes:
             items:
               type: object
               additionalProperties: false
-              properties:
-                sceneId:
-                  type: number
-                filePath:
-                  type: string
-                prompt:
-                  type: string
       executor:
         name: nodejs
         options:
@@ -201,6 +209,9 @@ nodes:
         from_node:
           - node_id: +typescript#3
             output_handle: subtitleAssets
+      - handle: videoSize
+        from_flow:
+          - input_handle: videoSize
     task:
       ui:
         default_width: 450
@@ -250,6 +261,18 @@ nodes:
         - handle: subtitleAssets
           json_schema:
             type: array
+          nullable: false
+        - handle: videoSize
+          json_schema:
+            enum:
+              - 1080x1080
+              - 1080x1920
+              - 1920x1080
+            ui:options:
+              labels:
+                - 1080x1080（1:1）
+                - 1080x1920（9:16）
+                - 1920x1080（16:9）
           nullable: false
       outputs_def:
         - handle: videoAsset
@@ -407,22 +430,45 @@ nodes:
             output_handle: audioAssets
 inputs_def:
   - handle: scenes
+    description: Output
     json_schema:
       type: array
     nullable: false
-    description: Output
   - handle: API_KEY
     json_schema:
       contentMediaType: oomol/secret
       type: string
-    nullable: false
     value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+    nullable: false
   - handle: outputDir
     json_schema:
       type: string
       ui:widget: dir
-    nullable: false
     value: /oomol-driver/oomol-storage/output2
+    nullable: false
+  - handle: videoSize
+    json_schema:
+      enum:
+        - 1080x1080
+        - 1080x1920
+        - 1920x1080
+      ui:options:
+        labels:
+          - 1080x1080（1:1）
+          - 1080x1920（9:16）
+          - 1920x1080（16:9）
+    nullable: false
+  - handle: imageSize
+    json_schema:
+      enum:
+        - 1024x1024
+        - 1024x1792
+        - 1792x1024
+      ui:options:
+        labels:
+          - 1024x1024（1:1）
+          - 1024x1792（9:16）
+          - 1792x1024（16:9）
 outputs_def:
   - handle: videoAsset
     json_schema:

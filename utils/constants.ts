@@ -23,9 +23,13 @@ export const VideoSize = {
     LANDSCAPE: "1920x1080",
     /** 纵向长方形 - 1080x1920 (9:16 宽高比) */
     PORTRAIT: "1080x1920"
-}
+} as const;
 
 export type VideoSizeType = typeof VideoSize[keyof typeof VideoSize];
+
+export function isValidVideoSize(size: string): size is VideoSizeType {
+    return Object.values(VideoSize).includes(size as VideoSizeType);
+}
 
 export interface VideoParams {
     resolution: string;

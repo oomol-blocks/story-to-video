@@ -22,7 +22,7 @@ export interface VideoGeneratorInputs {
     imageAssets: ImageAsset[];
     subtitleAssets: SubtitleAsset[];
     outputDir: string;
-    videoSize: VideoSizeType
+    videoSize: VideoSizeType;
 }
 
 export interface VideoGeneratorOutputs {

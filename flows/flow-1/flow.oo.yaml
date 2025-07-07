@@ -21,6 +21,19 @@ nodes:
           type: string
           ui:widget: dir
         value: /oomol-driver/oomol-storage/output2
+      - handle: videoSize
+        json_schema:
+          enum:
+            - 1080x1080
+            - 1080x1920
+            - 1920x1080
+          ui:options:
+            labels:
+              - 1080x1080（1:1）
+              - 1080x1920（9:16，竖屏）
+              - 1920x1080（16:9，横屏）
+        description: 视频尺寸
+        value: 1080x1080
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:
@@ -152,5 +165,68 @@ nodes:
         from_node:
           - node_id: +value#2
             output_handle: outputDir
+      - handle: videoSize
+        from_node:
+          - node_id: +typescript#1
+            output_handle: videoSize
+      - handle: imageSize
+        from_node:
+          - node_id: +typescript#1
+            output_handle: imageSize
     subflow: self::processor
+  - node_id: +typescript#1
+    title: "formatSize"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: videoSize
+          json_schema:
+            enum:
+              - 1080x1080
+              - 1080x1920
+              - 1920x1080
+            ui:options:
+              labels:
+                - 1080x1080（1:1）
+                - 1080x1920（9:16）
+                - 1920x1080（16:9）
+          nullable: false
+          description: 视频尺寸
+      outputs_def:
+        - handle: videoSize
+          json_schema:
+            enum:
+              - 1080x1080
+              - 1080x1920
+              - 1920x1080
+            ui:options:
+              labels:
+                - 1080x1080（1:1）
+                - 1080x1920（9:16）
+                - 1920x1080（16:9）
+          nullable: false
+          description: 视频尺寸
+        - handle: imageSize
+          json_schema:
+            enum:
+              - 1024x1024
+              - 1024x1792
+              - 1792x1024
+            ui:options:
+              labels:
+                - 1024x1024（1:1）
+                - 1024x1792（9:16）
+                - 1792x1024（16:9）
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#5.ts
+    inputs_from:
+      - handle: videoSize
+        value: 1080x1920
+        from_node:
+          - node_id: +value#2
+            output_handle: videoSize
 title: converter

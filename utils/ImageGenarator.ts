@@ -15,7 +15,7 @@ export interface ImageAsset {
 export interface ImageGeneratorInputs {
     scenes: ScriptScene[];
     API_KEY: string;
-    size: DallE3ImageSizeType,
+    imageSize: DallE3ImageSizeType,
     outputDir: string;
 }
 
@@ -34,13 +34,13 @@ export class ImageGenerator {
         console.log("Starting image generation...");
         context.reportProgress(0);
 
-        const { scenes, API_KEY, outputDir, size } = params;
+        const { scenes, API_KEY, outputDir, imageSize } = params;
         const imageAssets: ImageAsset[] = [];
 
-        if (isValidDallE3ImageSize3(size)) {
-            this.resolution = size;
+        if (isValidDallE3ImageSize3(imageSize)) {
+            this.resolution = imageSize;
         } else {
-            console.warn(`Unknown image size: ${size}, using default portrait（${DallE3ImageSize.PORTRAIT}） params`);
+            console.warn(`Unknown image size: ${imageSize}, using default portrait（${DallE3ImageSize.PORTRAIT}） params`);
         }
 
         // 确保输出目录存在

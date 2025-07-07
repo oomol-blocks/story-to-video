@@ -70,6 +70,9 @@
               "[]": true
             }
           }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
         }
       }
     },
@@ -77,8 +80,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 3529.986701740565,
-          "y": 369.95036190168037
+          "x": 3553.723173761329,
+          "y": 461.0126539462304
         }
       },
       "sections": {
@@ -156,15 +159,37 @@
           "x": -722.5179192224582,
           "y": 264.9872129596471
         }
+      },
+      "sections": {
+        "subflowInput": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            }
+          }
+        }
       }
     },
     "output": {
       "rfNode": {
         "position": {
-          "x": 4299.604588214313,
-          "y": 409.594736084616
+          "x": 4243.542093190244,
+          "y": 444.09473302250444
         }
       }
+    }
+  },
+  "commentNodes": {
+    "+comment-1751859343112": {
+      "contentWidth": 350,
+      "rfNode": {
+        "position": {
+          "x": -722.5179192224582,
+          "y": 621.9391250661785
+        }
+      },
+      "title": "视频生成 subflow",
+      "content": "### 整体输入\n\n```ts\ntype Input = {\n    scenes: ScriptScene[]; // 场景资源\n    API_KEY: string; // ohMyGPT SK\n    outputDir: string; // 文件输出路径\n    videoSize: VideoSizeType; // 视频尺寸\n    imageSize: DallE3ImageSizeType; // 图片尺寸 --> 目前由 videoSize 决定\n}\n```\n\n### 整体输出\n\n```ts\ntype Output = {\n    videoAsset: {\n        filePath: string; // 最终视频路径\n        duration: number; // 视频时长\n        resolution: string; // 视频分辨率\n        fileSize: number; // 文件大小\n    }\n}\n```"
     }
   }
 }

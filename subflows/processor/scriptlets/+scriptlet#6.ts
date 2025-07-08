@@ -15,8 +15,6 @@ export default async function (
     context: Context<Inputs, Outputs>
 ): Promise<Partial<Outputs> | undefined | void> {
 
-    console.log('before script: ', params.audioAssets, params.transcriptString)
-
     if (!params.transcriptString.trim()) {
         throw new Error('UnExpect Output')
     }
@@ -44,18 +42,6 @@ export default async function (
         console.error('原始输出:', params.transcriptString);
         throw new Error('Invalid JSON output');
     }
-
-    console.log("parsed audio assets: ", params.audioAssets.map(i => {
-        const transcript = transcripts.find(script =>
-            script.sceneId === i.sceneId &&
-            script.sentences &&
-            Array.isArray(script.sentences)
-        );
-        return {
-            ...i,
-            sentences: transcript.sentences || []
-        }
-    }))
 
     return {
         audioAssets: params.audioAssets.map(i => {

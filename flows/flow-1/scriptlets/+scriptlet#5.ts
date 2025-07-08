@@ -21,12 +21,8 @@ export default async function(
     if (!isValidVideoSize(videoSize)) {
         throw new Error(`无效的视频尺寸: ${videoSize}`);
     }
-    
-    // 根据视频尺寸获取对应的 DALL-E 3 图像尺寸
     const imageSize = getImageSizeFromVideoSize(videoSize);
 
-    console.log('image size&video size: ', imageSize, videoSize)
-    
     return {
         videoSize,
         imageSize

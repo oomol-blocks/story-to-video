@@ -38,6 +38,9 @@
           "collapsed": {
             "scenes": {
               "[]": true
+            },
+            "imagePromptOptions": {
+              "[]": true
             }
           }
         },
@@ -72,8 +75,8 @@
     "processor#1": {
       "rfNode": {
         "position": {
-          "x": 1239.4578167423022,
-          "y": 50.810988938899506
+          "x": 1284.3946756369312,
+          "y": -4.4959143160284825
         }
       },
       "sections": {

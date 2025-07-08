@@ -11,7 +11,7 @@ nodes:
       - handle: API_KEY
         value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
         from_flow:
-          - input_handle: API_KEY
+          - input_handle: IMAGE_API_KEY
         from_node:
           []
       - handle: outputDir
@@ -26,6 +26,11 @@ nodes:
       - handle: videoSize
         from_flow:
           - input_handle: videoSize
+      - handle: imagePromptOptions
+        value:
+          {}
+        from_flow:
+          - input_handle: imagePromptOptions
     task:
       ui:
         default_width: 450
@@ -34,6 +39,18 @@ nodes:
           description: Output
           json_schema:
             type: array
+          nullable: false
+        - handle: imagePromptOptions
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              historicalPeriod:
+                type: string
+              characterTraits:
+                type: string
+              baseImageStyle:
+                type: string
           nullable: false
         - handle: API_KEY
           json_schema:
@@ -93,7 +110,7 @@ nodes:
       - handle: API_KEY
         value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
         from_flow:
-          - input_handle: API_KEY
+          - input_handle: AUDIO_API_KEY
         from_node:
           []
       - handle: outputDir
@@ -449,12 +466,30 @@ inputs_def:
     json_schema:
       type: array
     nullable: false
-  - handle: API_KEY
+  - handle: imagePromptOptions
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        historicalPeriod:
+          type: string
+        characterTraits:
+          type: string
+        baseImageStyle:
+          type: string
+    value:
+      {}
+  - handle: IMAGE_API_KEY
+    json_schema:
+      contentMediaType: oomol/secret
+      type: string
+    value: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
+    nullable: false
+  - handle: AUDIO_API_KEY
     json_schema:
       contentMediaType: oomol/secret
       type: string
     value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
-    nullable: false
   - handle: outputDir
     json_schema:
       type: string

@@ -5,10 +5,8 @@ export default async function (
     params: ScriptParserInputs,
     context: Context<ScriptParserInputs, ScriptParserOutputs>
 ): Promise<Partial<ScriptParserOutputs>> {
-    console.log('origin text: ', params.scriptText);
     const parser = new ScriptParser();
     const parsedScript = await parser.parseScript(params, context);
-    console.log('parsed script: ', parsedScript)
     return parsedScript;
 
     // return {

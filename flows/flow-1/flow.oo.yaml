@@ -11,7 +11,12 @@ nodes:
         json_schema:
           type: string
         value: 草船借箭
-      - handle: API_KEY
+      - handle: IMAGE_API_KEY
+        json_schema:
+          contentMediaType: oomol/secret
+          type: string
+        value: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
+      - handle: AUDIO_API_KEY
         json_schema:
           contentMediaType: oomol/secret
           type: string
@@ -33,7 +38,7 @@ nodes:
               - 1080x1920（9:16，竖屏）
               - 1920x1080（16:9，横屏）
               - 1080x1080（1:1）
-        value: 1080x1920
+        value: 1080x1080
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:
@@ -51,47 +56,47 @@ nodes:
         value:
           - role: system
             content: |-
-              你是一个专业的儿童教育内容创作者，需要将中国小学课文{{input}}改编为符合中国传统文化的漫画风格的视频解说脚本。
-
+              你是一个专业的儿童教育内容创作者，需要将中国小学课文改编为符合中国传统文化的漫画风格的视频解说脚本。
               要求：
-              1. 将故事分解为3-5个关键场景
-              2. 每个场景包含：场景描述、解说词、视觉提示、人物特征、基础画面风格、时长
-              3. 语言要生动有趣，适合小学生理解
-              4. 解说词要简洁明了，每段30-50字
-              5. 视觉提示要详细描述画面内容，便于后续图片生成
-              6. 人物特征必须与大众普遍接受的形象一致
-              7. 基础画面风格用于确保图片间的连贯性和动画效果
+
+              将故事分解为3-5个关键场景
+              每个场景包含：历史时期、场景描述、解说词、视觉提示、人物特征、基础画面风格、时长
+              语言要生动有趣，适合小学生理解
+              解说词要简洁明了，每段30-50字
+              视觉提示要详细描述画面内容，便于后续图片生成
+              人物特征必须与大众普遍接受的形象一致，用字符串形式，简短经典，符合文章内容和中国传统文化，用分号分隔不同人物
+              基础画面风格用于确保图片间的连贯性和动画效果
 
               画面连贯性要求：
-              - 主要角色的造型、服装、颜色在各场景中保持一致
-              - 场景间的光线、色调、整体风格要统一
-              - 背景元素要有延续性，便于场景过渡
-              - 构图要考虑动画效果，预留动态元素空间
 
-              画面连贯性要求：
-              - 主要角色的造型、服装、颜色在各场景中保持一致
-              - 场景间的光线、色调、整体风格要统一
-              - 背景元素要有延续性，便于场景过渡
-              - 构图要考虑动画效果，预留动态元素空间
+              主要角色的造型、服装、颜色在各场景中保持一致
+              场景间的光线、色调、整体风格要统一
+              背景元素要有延续性，便于场景过渡
+              构图要考虑动画效果，预留动态元素空间
 
               严格按照以下格式输出，不要添加其他内容：
+              历史时期: [确定故事发生的具体历史时期，如"中国古代三国时期"、"明朝时期"等]
+              人物特征: [各人物的简短特征描述，用分号分隔]
+              基础画面风格: [统一的画面风格描述]
+
               场景1:
               描述: [场景描述]
-              解说词: [解说内容]
-              视觉提示: [画面描述]
-              人物特征: [核心人物的具体特征描述]
-              基础画面风格: [统一的画面风格描述]
+              解说词: [解说内容，30-50字]
+              视觉提示: [详细的画面描述，便于图片生成]
               时长: [秒数]
-
               场景2:
               描述: [场景描述]
-              解说词: [解说内容]
-              视觉提示: [画面描述]
-              人物特征: [核心人物的具体特征描述]
-              基础画面风格: [统一的画面风格描述]
+              解说词: [解说内容，30-50字]
+              视觉提示: [详细的画面描述，便于图片生成]
               时长: [秒数]
+              场景3:
+              描述: [场景描述]
+              解说词: [解说内容，30-50字]
+              视觉提示: [详细的画面描述，便于图片生成]
+              时长: [秒数]
+              [继续添加场景4-5，如需要]
 
-              请基于输入的课文内容生成脚本。
+              请基于输入的课文内容{{input}}生成脚本。
         schema_overrides:
           - schema:
               type: array
@@ -113,6 +118,17 @@ nodes:
           description: Output
           json_schema:
             type: array
+        - handle: imagePromptOptions
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              historicalPeriod:
+                type: string
+              characterTraits:
+                type: string
+              baseImageStyle:
+                type: string
       executor:
         name: nodejs
         options:
@@ -173,11 +189,11 @@ nodes:
         from_node:
           - node_id: +typescript#3
             output_handle: scenes
-      - handle: API_KEY
+      - handle: IMAGE_API_KEY
         value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
         from_node:
           - node_id: +value#2
-            output_handle: API_KEY
+            output_handle: IMAGE_API_KEY
       - handle: outputDir
         value: /oomol-driver/oomol-storage/output2
         from_node:
@@ -191,6 +207,14 @@ nodes:
         from_node:
           - node_id: +typescript#1
             output_handle: imageSize
+      - handle: imagePromptOptions
+        from_node:
+          - node_id: +typescript#3
+            output_handle: imagePromptOptions
+      - handle: AUDIO_API_KEY
+        from_node:
+          - node_id: +value#2
+            output_handle: AUDIO_API_KEY
     subflow: self::processor
   - node_id: +typescript#1
     title: "formatSize"

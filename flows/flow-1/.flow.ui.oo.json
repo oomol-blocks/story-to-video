@@ -50,7 +50,7 @@
       }
     },
     "video_preview#1": {
-      "contentWidth": 450,
+      "contentWidth": 350,
       "rfNode": {
         "position": {
           "x": 2598.9738226145582,
@@ -110,7 +110,7 @@
       "rfNode": {
         "position": {
           "x": 308.79707717449395,
-          "y": 588.2208407606653
+          "y": 590.1731566826757
         }
       },
       "title": "Comment #1",

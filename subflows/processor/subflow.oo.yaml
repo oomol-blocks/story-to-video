@@ -14,12 +14,6 @@ nodes:
           - input_handle: IMAGE_API_KEY
         from_node:
           []
-      - handle: outputDir
-        value: /oomol-driver/oomol-storage/output2
-        from_flow:
-          - input_handle: outputDir
-        from_node:
-          []
       - handle: imageSize
         from_flow:
           - input_handle: imageSize
@@ -57,10 +51,6 @@ nodes:
             contentMediaType: oomol/secret
             type: string
           nullable: false
-        - handle: outputDir
-          json_schema:
-            type: string
-            ui:widget: dir
         - handle: imageSize
           json_schema:
             enum:
@@ -244,6 +234,10 @@ nodes:
       - handle: videoSize
         from_flow:
           - input_handle: videoSize
+      - handle: IMAGE_API_KEY
+        value: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
+        from_flow:
+          - input_handle: IMAGE_API_KEY
     task:
       ui:
         default_width: 450
@@ -272,6 +266,11 @@ nodes:
           json_schema:
             type: string
             ui:widget: dir
+          nullable: false
+        - handle: IMAGE_API_KEY
+          json_schema:
+            contentMediaType: oomol/secret
+            type: string
           nullable: false
         - handle: audioAssets
           description: Output

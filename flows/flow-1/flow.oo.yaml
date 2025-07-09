@@ -6,7 +6,7 @@ nodes:
         json_schema:
           type: string
           ui:widget: file
-        value: /oomol-driver/oomol-storage/5 草船借箭.md
+        value: /oomol-driver/oomol-storage/天空为什么是蓝色.md
       - handle: bookName
         json_schema:
           type: string
@@ -25,7 +25,7 @@ nodes:
         json_schema:
           type: string
           ui:widget: dir
-        value: /oomol-driver/oomol-storage/output2
+        value: /oomol-driver/oomol-storage/output3
       - handle: videoSize
         description: 视频尺寸
         json_schema:
@@ -59,13 +59,14 @@ nodes:
               你是一个专业的儿童教育内容创作者，需要将中国小学课文改编为符合中国传统文化的漫画风格的视频解说脚本。
               要求：
 
-              将故事分解为3-5个关键场景
-              每个场景包含：历史时期、场景描述、解说词、视觉提示、人物特征、基础画面风格、时长
-              语言要生动有趣，适合小学生理解
-              解说词要简洁明了，每段30-50字
-              视觉提示要详细描述画面内容，便于后续图片生成
-              人物特征必须与大众普遍接受的形象一致，用字符串形式，简短经典，符合文章内容和中国传统文化，用分号分隔不同人物
-              基础画面风格用于确保图片间的连贯性和动画效果
+              1. 将故事分解为3-5个关键场景
+              2. 每个场景包含：历史时期、场景描述、解说词、视觉提示、人物特征、基础画面风格、时长
+              3. 语言要生动有趣，适合小学生理解
+              4. 解说词要简洁明了，每段30-50字
+              5. 视觉提示要详细描述画面内容，便于后续图片生成
+              6. 人物特征必须与大众普遍接受的形象一致，用字符串形式，简短经典，符合文章内容和中国传统文化，用分号分隔不同人物
+              7. 基础画面风格用于确保图片间的连贯性和动画效果
+              8. 每个场景时长为8-10秒
 
               画面连贯性要求：
 

@@ -24,7 +24,7 @@ export interface SubtitleGeneratorOutputs {
 }
 
 export class SubtitleGenerator {
-    private readonly maxLineLength = 13; // 每行的最大字符数
+    private readonly maxLineLength = 16; // 每行的最大字符数
 
     async generateSubtitles(
         params: SubtitleGeneratorInputs,
@@ -78,6 +78,7 @@ export class SubtitleGenerator {
         return assHeader + assEvents;
     }
 
+    // 根据不同的屏幕尺寸调整字幕位置及字体大小
     private generateAssHeader(): string {
         return `[Script Info]
 Title: Generated ASS
@@ -85,7 +86,7 @@ ScriptType: v4.00+
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,18,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
+Style: Default,Arial,20,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
 WrapStyle: 0
 
 [Events]
@@ -116,7 +117,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             // 处理长句子，按最大字符数分行
             const formattedText = this.formatTextWithLineBreaks(sentence.trim());
 
-            assEvents += `narration: 0,${startTime},${endTime},Default,,20,20,45,,${formattedText}\n`;
+            assEvents += `Dialogue: 0,${startTime},${endTime},Default,,20,20,45,,${formattedText}\n`;
 
             currentTime += sentenceDuration;
         }

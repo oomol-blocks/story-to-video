@@ -12,10 +12,10 @@
         "value": {
           "collapsed": {
             "audioConfig": {
-              "[]": true
+              "[]": false
             },
             "imageConfig": {
-              "[]": true
+              "[]": false
             },
             "videoConfig": {
               "[]": true

@@ -5,6 +5,6 @@ export default async function generateAudio(
     params: AudioGeneratorInputs,
     context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>
 ): Promise<AudioGeneratorOutputs> {
-    const generator = new AudioGenerator();
-    return await generator.generateAudio(params, context);
+    const generator = new AudioGenerator(context);
+    return await generator.generateAudio(params);
 }

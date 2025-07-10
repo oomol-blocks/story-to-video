@@ -6,215 +6,157 @@ import { FFmpegExecutor } from "./FFmpegExcutor";
 import { SubtitleAsset } from "./SubtitleGenerator";
 import { AudioAsset } from "./AudioGenerator";
 import { ImageAsset } from "./ImageGenarator";
-import { ScriptScene } from "./ScriptParser";
-import { VideoSizeType } from "./constants";
+import { MediaAsset, VideoConfig } from "./constants";
 
-export interface VideoAsset {
-    filePath: string;
+export interface VideoAsset extends MediaAsset {
     duration: number;
     resolution: string;
-    fileSize: number;
 }
 
 export interface VideoGeneratorInputs {
-    scenes: ScriptScene[];
-    audioAssets: AudioAsset[];
-    imageAssets: ImageAsset[];
-    subtitleAssets: SubtitleAsset[];
+    imageAssets: ImageAsset[],
+    audioAssets: AudioAsset[],
+    subtitleAssets: SubtitleAsset[],
+    config: VideoConfig;
     outputDir: string;
-    videoSize: VideoSizeType;
-    IMAGE_API_KEY: string;
+}
+
+export interface Segment {
+    id: string;
+    imageAsset: ImageAsset;
+    audioAsset: AudioAsset;
+    subtitleAsset: SubtitleAsset;
+    nextImageAsset?: ImageAsset;
 }
 
 export interface VideoGeneratorOutputs {
-    videoAsset: VideoAsset;
-}
-
-// 豆包API相关接口
-interface DoubaoTaskCreateRequest {
-    model: string;
-    content: Array<{
-        type: string;
-        text?: string;
-        image_url?: {
-            url: string;
-        };
-        role?: string;
-    }>;
-}
-
-interface DoubaoTaskCreateResponse {
-    id: string;
-    model: string;
-    status: string;
-    created_at: number;
-}
-
-interface DoubaoTaskGetResponse {
-    id: string;
-    model: string;
-    status: string;
-    error?: string;
-    content?: {
-        video_url?: string;
-    };
-    usage?: {
-        completion_tokens: number;
-        total_tokens: number;
-    };
-    created_at: number;
-    updated_at: number;
+    videoAssets: VideoAsset[];
+    mergedVideoAsset?: VideoAsset;
 }
 
 export class DoubaoVideoGenerator extends FFmpegExecutor {
-    private API_KEY: string;
-    private BASE_URL: string = "https://ark.cn-beijing.volces.com/api/v3";
-    private MODEL: string = "doubao-seedance-1-0-lite-i2v-250428";
+    // 暂不支持修改
+    private apiEndpoint: string = "https://ark.cn-beijing.volces.com/api/v3";
+    private model: string = "doubao-seedance-1-0-lite-i2v-250428";
+    // 目前只支持 10s ---> 当前接口只支持 5s、10s。这里直接设置为 10s
+    private readonly VIDEO_DURATION = 10;
+
+    private apiKey: string;
+    constructor(private context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>) {
+        super();
+    }
 
     async generateVideo(
         params: VideoGeneratorInputs,
-        context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>
+        segments: Segment[]
     ): Promise<VideoGeneratorOutputs> {
-        console.log("Starting video generation with Doubao API...");
-        context.reportProgress(0);
+        this.context.reportLog('Generating video segments...', "stdout");
 
-        const startTime = Date.now();
-        const {
-            scenes,
-            audioAssets,
-            imageAssets,
-            subtitleAssets,
-            outputDir,
-            videoSize,
-            IMAGE_API_KEY
-        } = params;
+        const { config, outputDir } = params;
+        const videoAssets: VideoAsset[] = [];
+        const tempVideoFiles: string[] = []; // 收集临时视频文件
 
-        this.API_KEY = IMAGE_API_KEY;
+        await this.ensureDirectory(outputDir);
 
-        // 确保输出目录存在
-        await fs.mkdir(outputDir, { recursive: true });
-
-        // 计算总时长用于进度计算
-        this.totalDuration = audioAssets.reduce((sum, asset) => sum + asset.duration, 0);
-
-        const videoSegments: string[] = [];
-
-        // 为每个场景生成视频片段
-        for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const audioAsset = audioAssets.find(asset => asset.sceneId === scene.id);
-            const currentImageAsset = imageAssets.find(asset => asset.sceneId === scene.id);
-            const subtitleAsset = subtitleAssets.find(asset => asset.sceneId === scene.id);
-
-            if (!audioAsset || !currentImageAsset || !subtitleAsset) {
-                console.warn(`Missing assets for scene ${scene.id}, skipping`);
-                continue;
-            }
-
-            const nextImageAsset = i < scenes.length - 1
-                ? imageAssets.find(asset => asset.sceneId === scenes[i + 1].id)
-                : null;
-
-            console.log(`Generating video segment for scene ${scene.id}`);
-
-            // 生成视频片段
-            const segmentOutput = path.join(outputDir, `segment_${scene.id}.mp4`);
-
-            try {
-                // 使用豆包API生成视频段
-                const videoUrl = await this.generateVideoSegmentWithDoubao(
-                    scene,
-                    currentImageAsset,
-                    nextImageAsset,
-                    audioAsset.duration
-                );
-
-                // 下载生成的视频
-                const rawVideoPath = path.join(outputDir, `raw_segment_${scene.id}.mp4`);
-                await this.downloadVideo(videoUrl, rawVideoPath);
-
-                // 使用FFmpeg合成音频和字幕
-                await this.compositeVideoWithAudioAndSubtitles(
-                    rawVideoPath,
-                    audioAsset.filePath,
-                    subtitleAsset.filePath,
-                    segmentOutput,
-                    audioAsset.duration,
-                    videoSize
-                );
-
-                videoSegments.push(segmentOutput);
-
-                // 清理临时文件
-                await fs.unlink(rawVideoPath).catch(console.warn);
-
-            } catch (error) {
-                console.error(`Failed to generate video segment for scene ${scene.id}:`, error);
-                continue;
-            }
-
-            const progress = ((i + 1) / scenes.length) * 80; // 80% 用于片段生成
-            context.reportProgress(progress);
-
-            console.log(`✓ Generated video segment for scene ${scene.id}`);
-        }
-
-        if (videoSegments.length === 0) {
-            throw new Error('No video segments were generated');
-        }
-
-        // 合并视频片段
-        const finalOutputPath = await this.mergeVideoSegments(
-            videoSegments,
-            outputDir,
-            context,
-            videoSize
-        );
-
-        const stats = await fs.stat(finalOutputPath);
-        const processingTime = Date.now() - startTime;
-        const totalDuration = audioAssets.reduce((sum, asset) => sum + asset.duration, 0);
-
-        // 清理临时文件
-        // try {
-        //     await this.cleanupTemporaryFiles(
-        //         audioAssets,
-        //         imageAssets,
-        //         subtitleAssets,
-        //         videoSegments,
-        //     );
-        // } catch (error) {
-        //     console.warn("Failed to cleanup some temporary files:", error);
-        // }
-
-        context.reportProgress(100);
-        console.log(`✓ Video generation completed in ${processingTime}ms`);
-
-        return {
-            videoAsset: {
-                filePath: finalOutputPath,
-                duration: totalDuration,
-                resolution: videoSize,
-                fileSize: stats.size
-            }
-        };
-    }
-
-    private async generateVideoSegmentWithDoubao(
-        scene: ScriptScene,
-        firstFrameImageAsset: ImageAsset,
-        lastFrameImageAsset: ImageAsset | null,
-        duration: number
-    ): Promise<string> {
-
-        console.log(duration)
-        console.log(`Generating video with Doubao API for scene ${scene.id}`);
+        this.apiKey = config.apiKey;
 
         try {
-            // 构建提示词，包含场景描述和视频参数
-            const prompt = `${scene.visualPrompt} --rs 720p --dur ${Math.ceil(duration)}`;
+            // 生成各个视频段
+            for (let i = 0; i < segments.length; i++) {
+                const segment = segments[i];
+                this.context.reportLog(`Generating video segment ${i + 1}/${segments.length}`, "stdout");
 
-            const content: DoubaoTaskCreateRequest['content'] = [
+                const { videoAsset, tempFilePath } = await this.generateSingleVideoSegment(segment, config, outputDir);
+                videoAssets.push(videoAsset);
+                if (tempFilePath) {
+                    tempVideoFiles.push(tempFilePath);
+                }
+
+                this.context.reportProgress((i + 1) / segments.length * 80);
+            }
+
+            // 合并视频
+            this.context.reportLog('Merging video segments...', 'stdout');
+            const mergedVideoAsset = await this.mergeVideoSegments(videoAssets, config, outputDir);
+            this.context.reportProgress(95);
+
+            // 清理临时文件
+            this.context.reportLog('Cleaning up temporary files...', 'stdout');
+            await this.cleanupTemporaryFiles(
+                params.audioAssets,
+                params.imageAssets,
+                params.subtitleAssets,
+                tempVideoFiles,
+                videoAssets // 如果只保留合并后的视频，也可以清理各个视频段
+            );
+            this.context.reportProgress(100);
+
+            this.context.reportLog('✓ Video generation completed successfully', 'stdout');
+
+            return {
+                videoAssets,
+                mergedVideoAsset
+            };
+        } catch (error) {
+            // 出错时也要清理临时文件
+            this.context.reportLog('Error occurred, cleaning up temporary files...', 'stderr');
+            await this.cleanupTemporaryFiles(
+                params.audioAssets,
+                params.imageAssets,
+                params.subtitleAssets,
+                tempVideoFiles,
+                []
+            );
+            throw error;
+        }
+    }
+
+    private async generateSingleVideoSegment(
+        segment: Segment,
+        config: VideoConfig,
+        outputDir: string
+    ): Promise<{ videoAsset: VideoAsset; tempFilePath?: string }> {
+        const tempFilePath = `${outputDir}/temp_video_${segment.id}.${config.format}`;
+        const filePath = `${outputDir}/video_${segment.id}.${config.format}`;
+
+        try {
+            // 生成并下载视频段
+            const videoUrl = await this.callVideoAPI(segment);
+            await this.downloadVideo(videoUrl, tempFilePath);
+
+            // 合成音频和字幕
+            await this.compositeVideo(segment, tempFilePath, filePath, config);
+
+            // 获取视频信息
+            const videoInfo = await this.getVideoInfo(filePath);
+
+            const videoAsset: VideoAsset = {
+                id: segment.id,
+                filePath: filePath,
+                duration: videoInfo.duration,
+                resolution: config.size,
+                fileSize: videoInfo.fileSize,
+                format: config.format,
+                createdAt: new Date()
+            };
+
+            return { videoAsset, tempFilePath };
+        } catch (error) {
+            // 清理当前段的临时文件
+            try {
+                await fs.unlink(tempFilePath);
+            } catch { }
+            throw error;
+        }
+    }
+
+    private async callVideoAPI(segment: Segment): Promise<string> {
+        // ... 保持原有的API调用逻辑不变
+        try {
+            console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
+            const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${this.VIDEO_DURATION}`;
+
+            const content = [
                 {
                     type: "text",
                     text: prompt
@@ -222,52 +164,251 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 {
                     type: "image_url",
                     image_url: {
-                        url: firstFrameImageAsset.filePath
+                        url: segment.imageAsset.filePath
                     },
                     role: "first_frame"
                 }
             ];
 
-            const lastFrameUrl = lastFrameImageAsset
-                ? lastFrameImageAsset.filePath
-                : null;
-
-            if (lastFrameUrl) {
+            if (segment.nextImageAsset) {
                 content.push({
                     type: "image_url",
                     image_url: {
-                        url: lastFrameUrl
+                        url: segment.nextImageAsset.filePath
                     },
                     role: "last_frame"
                 });
             }
 
-            // 创建视频生成任务
-            const taskCreateRequest: DoubaoTaskCreateRequest = {
-                model: this.MODEL,
-                content: content
+            const taskCreateRequest = {
+                model: this.model,
+                content
             };
 
-            // 创建任务
             const createResponse = await this.createDoubaoTask(taskCreateRequest);
-            console.log(`Task created: ${createResponse.id}`);
+            this.context.reportLog(`Task created: ${createResponse.id}`, "stdout");
 
-            // 轮询任务状态
             const videoUrl = await this.pollTaskStatus(createResponse.id);
-            console.log(`Video generated: ${videoUrl}`);
+            this.context.reportLog(`Video generated: ${videoUrl}`, "stdout");
 
             return videoUrl;
-        } catch (e) {
-            throw new Error(`Failed to generate Doubao task: ${e}`);
+        } catch (error) {
+            throw new Error(`Failed to call video API: ${error.message}`);
         }
     }
 
-    private async createDoubaoTask(request: DoubaoTaskCreateRequest): Promise<DoubaoTaskCreateResponse> {
-        const response = await fetch(`${this.BASE_URL}/contents/generations/tasks`, {
+    private async compositeVideo(
+        segment: Segment,
+        inputPath: string,
+        outputPath: string,
+        config: VideoConfig
+    ): Promise<void> {
+        this.context.reportLog(`Compositing video with audio and subtitles`, "stdout");
+
+        try {
+            // 验证输入文件
+            await fs.access(inputPath);
+            await fs.access(segment.audioAsset.filePath);
+            await fs.access(segment.subtitleAsset.filePath);
+
+            const resolution = config.size.replace('x', ':');
+
+            // 构建 FFmpeg 命令
+            const filterComplex = `subtitles='${segment.subtitleAsset.filePath.replace(/'/g, "\\'")}',scale=${resolution}`;
+
+            const args = [
+                '-y',
+                '-i', inputPath,
+                '-i', segment.audioAsset.filePath,
+                '-c:v', "libx264",
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-pix_fmt', 'yuv420p',
+                '-vf', filterComplex,
+                '-t', this.VIDEO_DURATION.toString(),
+                '-shortest',
+                outputPath
+            ];
+
+            await this.runFFmpegCommand(args);
+            this.context.reportLog(`✓ Video composite completed: ${outputPath}`, "stdout");
+        } catch (error) {
+            throw new Error(`Failed to composite video: ${error.message}`);
+        }
+    }
+
+    private async mergeVideoSegments(
+        videoAssets: VideoAsset[],
+        config: VideoConfig,
+        outputDir: string
+    ): Promise<VideoAsset> {
+        const mergedPath = `${outputDir}/merged_video.${config.format}`;
+
+        try {
+            await this.runFFmpegMerge(videoAssets, mergedPath, config);
+
+            const videoInfo = await this.getVideoInfo(mergedPath);
+
+            return {
+                id: 'merged',
+                filePath: mergedPath,
+                duration: videoInfo.duration,
+                resolution: config.size,
+                fileSize: videoInfo.fileSize,
+                format: config.format,
+                createdAt: new Date()
+            };
+        } catch (error) {
+            throw new Error(`Failed to merge video segments: ${error.message}`);
+        }
+    }
+
+    private async runFFmpegMerge(
+        videoAssets: VideoAsset[],
+        outputPath: string,
+        config: VideoConfig
+    ): Promise<void> {
+        if (videoAssets.length === 0) {
+            throw new Error('No video assets to merge');
+        }
+
+        if (videoAssets.length === 1) {
+            await fs.copyFile(videoAssets[0].filePath, outputPath);
+            return;
+        }
+
+        const fileListPath = path.join(path.dirname(outputPath), 'filelist.txt');
+        const fileListContent = videoAssets.map(asset => `file '${asset.filePath}'`).join('\n');
+        await fs.writeFile(fileListPath, fileListContent, 'utf8');
+
+        try {
+            const resolution = config.size.replace('x', ':');
+
+            const mergeArgs = [
+                '-y',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', fileListPath,
+                '-c:v', "libx264",
+                '-c:a', 'aac',
+                '-vf', `scale=${resolution}`,
+                '-pix_fmt', 'yuv420p',
+                outputPath
+            ];
+
+            await this.runFFmpegCommand(mergeArgs);
+            await fs.unlink(fileListPath).catch(() => { });
+
+            this.context.reportLog(`✓ Video merge completed: ${outputPath}`, "stdout");
+        } catch (error) {
+            await fs.unlink(fileListPath).catch(() => { });
+            throw error;
+        }
+    }
+
+    /**
+     * 清理临时文件
+     */
+    private async cleanupTemporaryFiles(
+        audioAssets: AudioAsset[],
+        imageAssets: ImageAsset[],
+        subtitleAssets: SubtitleAsset[],
+        tempVideoFiles: string[],
+        videoSegments: VideoAsset[] = [] // 可选：如果只保留合并视频，可以删除各个视频段
+    ): Promise<void> {
+        this.context.reportLog("Starting cleanup of temporary files...", "stdout");
+
+        const filesToDelete: string[] = [];
+        const fileCategories = {
+            audio: audioAssets.map(asset => asset.filePath),
+            images: imageAssets.map(asset => asset.filePath),
+            subtitles: subtitleAssets.map(asset => asset.filePath),
+            tempVideos: tempVideoFiles,
+            videoSegments: videoSegments.map(asset => asset.filePath)
+        };
+
+        // 收集所有需要删除的文件
+        Object.entries(fileCategories).forEach(([category, files]) => {
+            if (files.length > 0) {
+                this.context.reportLog(`Found ${files.length} ${category} files to cleanup`, "stdout");
+                filesToDelete.push(...files);
+            }
+        });
+
+        // 删除文件并统计结果
+        let deletedCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        for (const filePath of filesToDelete) {
+            try {
+                // 检查文件是否存在
+                await fs.access(filePath);
+                await fs.unlink(filePath);
+                deletedCount++;
+                this.context.reportLog(`✓ Deleted: ${path.basename(filePath)}`, "stdout");
+            } catch (error) {
+                errorCount++;
+                const errorMsg = `✗ Failed to delete: ${path.basename(filePath)} - ${error.message}`;
+                errors.push(errorMsg);
+                this.context.reportLog(errorMsg, "stderr");
+            }
+        }
+
+        // 输出清理摘要
+        const summary = `Cleanup completed: ${deletedCount} files deleted, ${errorCount} errors`;
+        this.context.reportLog(summary, errorCount > 0 ? "stderr" : "stdout");
+
+        if (errorCount > 0) {
+            this.context.reportLog("Cleanup errors details:", "stderr");
+            errors.forEach(error => this.context.reportLog(error, "stderr"));
+        }
+    }
+
+    /**
+     * 清理输出目录中的特定类型文件
+     */
+    private async cleanupDirectoryByPattern(
+        outputDir: string,
+        patterns: string[],
+        description: string
+    ): Promise<void> {
+        this.context.reportLog(`Cleaning up ${description} in directory: ${outputDir}`, "stdout");
+
+        try {
+            const files = await fs.readdir(outputDir);
+            const matchingFiles = files.filter(file =>
+                patterns.some(pattern => {
+                    const regex = new RegExp(pattern, 'i');
+                    return regex.test(file);
+                })
+            );
+
+            let deletedCount = 0;
+            for (const file of matchingFiles) {
+                try {
+                    const filePath = path.join(outputDir, file);
+                    await fs.unlink(filePath);
+                    deletedCount++;
+                    this.context.reportLog(`✓ Deleted: ${file}`, "stdout");
+                } catch (error) {
+                    this.context.reportLog(`✗ Failed to delete: ${file} - ${error.message}`, "stderr");
+                }
+            }
+
+            this.context.reportLog(`✓ Cleaned up ${deletedCount} ${description} files`, "stdout");
+        } catch (error) {
+            this.context.reportLog(`Failed to cleanup ${description} in ${outputDir}: ${error.message}`, "stderr");
+        }
+    }
+
+    // ... 其他原有方法保持不变
+    private async createDoubaoTask(request: any): Promise<any> {
+        const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.API_KEY}`
+                'Authorization': `Bearer ${this.apiKey}`
             },
             body: JSON.stringify(request)
         });
@@ -281,14 +422,14 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     }
 
     private async pollTaskStatus(taskId: string): Promise<string> {
-        const maxAttempts = 60; // 最大轮询次数
-        const pollInterval = 10000; // 轮询间隔10秒
+        const maxAttempts = 60;
+        const pollInterval = 10000;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const response = await fetch(`${this.BASE_URL}/contents/generations/tasks/${taskId}`, {
+            const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks/${taskId}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.API_KEY}`
+                    'Authorization': `Bearer ${this.apiKey}`
                 }
             });
 
@@ -297,9 +438,8 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 throw new Error(`Failed to get task status: ${response.status} ${errorText}`);
             }
 
-            const taskResponse: DoubaoTaskGetResponse = await response.json();
-
-            console.log(`Task ${taskId} status: ${taskResponse.status}`);
+            const taskResponse = await response.json();
+            this.context.reportLog(`Task ${taskId} status: ${taskResponse.status}`, "stdout");
 
             if (taskResponse.status === 'succeeded') {
                 if (!taskResponse.content?.video_url) {
@@ -312,135 +452,31 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 throw new Error('Task was cancelled');
             }
 
-            // 等待后继续轮询
             await new Promise(resolve => setTimeout(resolve, pollInterval));
         }
 
         throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`);
     }
 
-    private async downloadVideo(url: string, outputPath: string): Promise<void> {
-        console.log(`Downloading video from: ${url}`);
+    private async downloadVideo(url: string, filePath: string): Promise<void> {
+        this.context.reportLog(`Downloading video from: ${url}`, "stdout");
 
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Failed to download video: ${response.status}`);
-        }
-
-        const buffer = await response.arrayBuffer();
-        await fs.writeFile(outputPath, Buffer.from(buffer));
-
-        console.log(`✓ Video downloaded to: ${outputPath}`);
-    }
-
-    private async compositeVideoWithAudioAndSubtitles(
-        videoPath: string,
-        audioPath: string,
-        subtitlePath: string,
-        outputPath: string,
-        duration: number,
-        videoSize: string
-    ): Promise<void> {
-        console.log(`Compositing video with audio and subtitles`);
-
-        // 验证输入文件
         try {
-            await fs.access(videoPath);
-            await fs.access(audioPath);
-            await fs.access(subtitlePath);
-        } catch (error) {
-            throw new Error(`Missing input files: ${error}`);
-        }
-
-        const [width, height] = videoSize.split('x');
-        const size = `${width}:${height}`;
-
-        const filterComplex = `subtitles='${subtitlePath.replace(/'/g, "\\'")}',scale=${size}`;
-
-        const args = [
-            '-y',
-            '-i', videoPath,
-            '-i', audioPath,
-            '-c:v', 'libx264',
-            '-c:a', 'aac',
-            '-b:a', '128k',
-            '-pix_fmt', 'yuv420p',
-            '-vf', filterComplex,
-            '-t', duration.toString(),
-            '-shortest',
-            outputPath
-        ];
-
-        await this.runFFmpegCommand(args);
-        console.log(`✓ Video composite completed: ${outputPath}`);
-    }
-
-    private async mergeVideoSegments(
-        videoSegments: string[],
-        outputDir: string,
-        context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
-        videoSize: string
-    ): Promise<string> {
-        const fileListPath = path.join(outputDir, 'filelist.txt');
-        const fileListContent = videoSegments.map(segment => `file '${segment}'`).join('\n');
-        await fs.writeFile(fileListPath, fileListContent, 'utf8');
-
-        const finalOutputPath = path.join(outputDir, 'final_video.mp4');
-        console.log("Merging video segments...");
-
-        context.reportProgress(85);
-
-        const [width, height] = videoSize.split('x');
-        const size = `${width}:${height}`;
-
-        const mergeArgs = [
-            '-y',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', fileListPath,
-            '-c:v', 'libx264',
-            '-c:a', 'aac',
-            '-vf', `scale=${size}`,
-            '-pix_fmt', 'yuv420p',
-            finalOutputPath
-        ];
-
-        await this.runFFmpegCommand(mergeArgs);
-        context.reportProgress(95);
-
-        // 清理临时文件
-        await fs.unlink(fileListPath).catch(console.warn);
-
-        return finalOutputPath;
-    }
-
-    private async cleanupTemporaryFiles(
-        audioAssets: AudioAsset[],
-        imageAssets: ImageAsset[],
-        subtitleAssets: SubtitleAsset[],
-        videoSegments: string[]
-    ): Promise<void> {
-        console.log("Cleaning up temporary files...");
-
-        const filesToDelete: string[] = [];
-
-        // 收集所有临时文件路径
-        audioAssets.forEach(asset => filesToDelete.push(asset.filePath));
-        imageAssets.forEach(asset => filesToDelete.push(asset.filePath));
-        subtitleAssets.forEach(asset => filesToDelete.push(asset.filePath));
-        videoSegments.forEach(segment => filesToDelete.push(segment));
-
-        // 删除文件
-        let deletedCount = 0;
-        for (const filePath of filesToDelete) {
-            try {
-                await fs.unlink(filePath);
-                deletedCount++;
-            } catch (error) {
-                console.warn(`Failed to delete temporary file: ${filePath}`, error);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to download video: ${response.status}`);
             }
-        }
 
-        console.log(`✓ Cleaned up ${deletedCount} temporary files`);
+            const buffer = await response.arrayBuffer();
+            await fs.writeFile(filePath, Buffer.from(buffer));
+
+            this.context.reportLog(`✓ Video downloaded to: ${filePath}`, "stdout");
+        } catch (error) {
+            throw new Error(`Failed to download video: ${error.message}`);
+        }
+    }
+
+    private async ensureDirectory(dir: string) {
+        return await fs.mkdir(dir, { recursive: true });
     }
 }

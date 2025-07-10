@@ -1,11 +1,26 @@
 {
   "nodes": {
     "+value#2": {
-      "contentWidth": 542.5223532315173,
+      "contentWidth": 590.538420769109,
       "rfNode": {
         "position": {
-          "x": -558.1162655812498,
-          "y": -47.1890110611005
+          "x": -568.6017500183732,
+          "y": -15.864883209016341
+        }
+      },
+      "sections": {
+        "value": {
+          "collapsed": {
+            "audioConfig": {
+              "[]": true
+            },
+            "imageConfig": {
+              "[]": true
+            },
+            "videoConfig": {
+              "[]": true
+            }
+          }
         }
       }
     },
@@ -29,8 +44,8 @@
       "contentWidth": 350.4909266445239,
       "rfNode": {
         "position": {
-          "x": 732.0440693869515,
-          "y": -350.5765948302205
+          "x": 803.4136228767047,
+          "y": -346.1670982864209
         }
       },
       "sections": {
@@ -40,6 +55,9 @@
               "[]": true
             },
             "imagePromptOptions": {
+              "[]": true
+            },
+            "metadata": {
               "[]": true
             }
           }
@@ -62,8 +80,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 2017.077267877441,
-          "y": 50.810988938899506
+          "x": 1990.3238692850177,
+          "y": 3.9925414021590697
         }
       },
       "sections": {
@@ -73,10 +91,11 @@
       }
     },
     "processor#1": {
+      "contentWidth": 412.69070471033797,
       "rfNode": {
         "position": {
-          "x": 1284.3946756369312,
-          "y": -4.4959143160284825
+          "x": 1371.0753254354654,
+          "y": -41.167098286420924
         }
       },
       "sections": {
@@ -88,34 +107,9 @@
           }
         }
       }
-    },
-    "+typescript#1": {
-      "contentWidth": 590.0890788945161,
-      "rfNode": {
-        "position": {
-          "x": 308.79707717449395,
-          "y": 220.48866961246
-        }
-      },
-      "sections": {
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
     }
   },
   "commentNodes": {
-    "+comment-1751892452799": {
-      "contentWidth": 350,
-      "rfNode": {
-        "position": {
-          "x": 308.79707717449395,
-          "y": 590.1731566826757
-        }
-      },
-      "title": "Comment #1",
-      "content": "获取图片、视频尺寸：目前只支持用户选择视频尺寸。然后根据选择的视频尺寸获取对应需要生成的图片尺寸。"
-    },
     "+comment-1751892563353": {
       "contentWidth": 350,
       "rfNode": {

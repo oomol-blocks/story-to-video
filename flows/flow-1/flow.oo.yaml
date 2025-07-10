@@ -7,38 +7,126 @@ nodes:
           type: string
           ui:widget: file
         value: /oomol-driver/oomol-storage/天空为什么是蓝色.md
-      - handle: bookName
+      - handle: imageConfig
         json_schema:
-          type: string
-        value: 草船借箭
-      - handle: IMAGE_API_KEY
+          type: object
+          additionalProperties: false
+          properties:
+            apiEndpoint:
+              enum:
+                - https://ark.cn-beijing.volces.com/api/v3/images/generations
+              ui:options:
+                labels:
+                  - DOUBAO_IMAGE_BASE_URL
+            model:
+              enum:
+                - doubao-seedream-3-0-t2i-250415
+              ui:options:
+                labels:
+                  - DOUBAO_SEEDREAM_T2I
+            apiKey:
+              contentMediaType: oomol/secret
+              type: string
+            format:
+              enum:
+                - png
+              ui:options:
+                labels:
+                  - png
+            size:
+              enum:
+                - 1024x1024
+                - 720x1280
+                - 1280x720
+              ui:options:
+                labels:
+                  - 1024x1024（1:1）
+                  - 720x1280（9:16）
+                  - 1280x720（16:9）
+        value:
+          apiEndpoint: https://ark.cn-beijing.volces.com/api/v3/images/generations
+          model: doubao-seedream-3-0-t2i-250415
+          apiKey: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
+          format: png
+          size: 720x1280
+      - handle: videoConfig
         json_schema:
-          contentMediaType: oomol/secret
-          type: string
-        value: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
-      - handle: AUDIO_API_KEY
+          type: object
+          additionalProperties: false
+          properties:
+            apiEndpoint:
+              enum:
+                - https://ark.cn-beijing.volces.com/api/v3
+              ui:options:
+                labels:
+                  - DOUBAO_VIDEO_BASE_URL
+            model:
+              enum:
+                - doubao-seedance-1-0-lite-i2v-250428
+              ui:options:
+                labels:
+                  - DOUBAO_SEEDANCE
+            apiKey:
+              contentMediaType: oomol/secret
+              type: string
+            format:
+              enum:
+                - mp4
+              ui:options:
+                labels:
+                  - MP4
+            size:
+              enum:
+                - 1280x720
+                - 720x720
+                - 720x1280
+              ui:options:
+                labels:
+                  - 1280x720（16:9 - 720p）
+                  - 720x720（1:1 - 720p）
+                  - 720x1280（9:16 - 720p）
+        value:
+          apiEndpoint: https://ark.cn-beijing.volces.com/api/v3
+          model: doubao-seedance-1-0-lite-i2v-250428
+          apiKey: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
+          format: mp4
+          size: 720x1280
+      - handle: audioConfig
         json_schema:
-          contentMediaType: oomol/secret
-          type: string
-        value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+          type: object
+          additionalProperties: false
+          properties:
+            apiEndpoint:
+              enum:
+                - https://cn2us02.opapi.win/v1/audio/speech
+              ui:options:
+                labels:
+                  - GPT_AUDIO_BASE_URL
+            model:
+              enum:
+                - tts-1
+              ui:options:
+                labels:
+                  - GPT_TTS_1
+            apiKey:
+              contentMediaType: oomol/secret
+              type: string
+            format:
+              enum:
+                - mp3
+              ui:options:
+                labels:
+                  - MP3
+        value:
+          apiEndpoint: https://cn2us02.opapi.win/v1/audio/speech
+          model: tts-1
+          apiKey: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+          format: mp3
       - handle: outputDir
         json_schema:
           type: string
           ui:widget: dir
         value: /oomol-driver/oomol-storage/output3
-      - handle: videoSize
-        description: 视频尺寸
-        json_schema:
-          enum:
-            - 1080x1920
-            - 1920x1080
-            - 1080x1080
-          ui:options:
-            labels:
-              - 1080x1920（9:16，竖屏）
-              - 1920x1080（16:9，横屏）
-              - 1080x1080（1:1）
-        value: 1080x1080
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:
@@ -57,45 +145,36 @@ nodes:
           - role: system
             content: |-
               你是一个专业的儿童教育内容创作者，需要将中国小学课文改编为符合中国传统文化的漫画风格的视频解说脚本。
-              要求：
+              要求如下：
 
-              1. 将故事分解为3-5个关键场景
-              2. 每个场景包含：历史时期、场景描述、解说词、视觉提示、人物特征、基础画面风格、时长
-              3. 语言要生动有趣，适合小学生理解
-              4. 解说词要简洁明了，每段30-50字
-              5. 视觉提示要详细描述画面内容，便于后续图片生成
-              6. 人物特征必须与大众普遍接受的形象一致，用字符串形式，简短经典，符合文章内容和中国传统文化，用分号分隔不同人物
-              7. 基础画面风格用于确保图片间的连贯性和动画效果
-              8. 每个场景时长为8-10秒
+              1. 将故事拆分为几个关键场景，每个场景固定时长为 10 秒。
+              2. 每个场景包括：
+                  - 描述：本段剧情发生的内容
+                  - 解说词：适合小学生理解的解说内容，语言生动有趣，简洁明了，控制在 30～50 字，确保语速为 1 倍速时朗读时长为 9～10 秒。
+                  - 视觉提示：画面要素详细描述，便于生成漫画风格画面，要求内容完整、逻辑连贯，不出现“幻觉”，如“请确保物理逻辑一致，不能出现稻草人没有眼睛、蛇有两个尾巴等”
+                  - 时长：统一为 10 秒
+              3. 按照输入内容，总共生成 4-6 个场景。
+              3. 所有人物要用标准格式提供特征描述，包含人物性格、外貌特征，用中文分号分隔，不添加引号。
+              4. 场景画面需保持角色造型、服饰、颜色一致，光线色调统一，背景元素有延续性。
+              5. 输出格式严格如下，不添加额外内容：
 
-              画面连贯性要求：
-
-              主要角色的造型、服装、颜色在各场景中保持一致
-              场景间的光线、色调、整体风格要统一
-              背景元素要有延续性，便于场景过渡
-              构图要考虑动画效果，预留动态元素空间
-
-              严格按照以下格式输出，不要添加其他内容：
-              历史时期: [确定故事发生的具体历史时期，如"中国古代三国时期"、"明朝时期"等]
-              人物特征: [各人物的简短特征描述，用分号分隔]
+              历史时期: [确定故事发生的具体历史时期，如"中国古代三国时期"、"明朝时期"等]  
+              人物特征: [各人物的简短特征描述，用分号分隔]  
               基础画面风格: [统一的画面风格描述]
 
-              场景1:
-              描述: [场景描述]
-              解说词: [解说内容，30-50字]
-              视觉提示: [详细的画面描述，便于图片生成]
-              时长: [秒数]
-              场景2:
-              描述: [场景描述]
-              解说词: [解说内容，30-50字]
-              视觉提示: [详细的画面描述，便于图片生成]
-              时长: [秒数]
-              场景3:
-              描述: [场景描述]
-              解说词: [解说内容，30-50字]
-              视觉提示: [详细的画面描述，便于图片生成]
-              时长: [秒数]
-              [继续添加场景4-5，如需要]
+              场景1:  
+              描述: [场景描述]  
+              解说词: [30-50字，约9-10秒语速朗读]  
+              视觉提示: [详细的画面描述，便于图片生成]  
+              时长: 10  
+
+              场景2:  
+              描述: [场景描述]  
+              解说词: [30-50字]  
+              视觉提示: [详细的画面描述，便于图片生成]  
+              时长: 10
+
+              [继续添加场景3-5，如需要]
 
               请基于输入的课文内容{{input}}生成脚本。
         schema_overrides:
@@ -109,7 +188,7 @@ nodes:
       ui:
         default_width: 450
       inputs_def:
-        - handle: scriptText
+        - handle: content
           description: Input
           json_schema:
             type: string
@@ -119,7 +198,7 @@ nodes:
           description: Output
           json_schema:
             type: array
-        - handle: imagePromptOptions
+        - handle: metadata
           json_schema:
             type: object
             additionalProperties: false
@@ -135,7 +214,7 @@ nodes:
         options:
           entry: scriptlets/+scriptlet#1.ts
     inputs_from:
-      - handle: scriptText
+      - handle: content
         value:
         from_node:
           - node_id: LLM#1
@@ -183,93 +262,33 @@ nodes:
       - handle: videoAsset
         from_node:
           - node_id: processor#1
-            output_handle: videoAsset
+            output_handle: mergedVideoAsset
   - node_id: processor#1
     inputs_from:
       - handle: scenes
         from_node:
           - node_id: +typescript#3
             output_handle: scenes
-      - handle: IMAGE_API_KEY
-        value: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
-        from_node:
-          - node_id: +value#2
-            output_handle: IMAGE_API_KEY
       - handle: outputDir
         value: /oomol-driver/oomol-storage/output2
         from_node:
           - node_id: +value#2
             output_handle: outputDir
-      - handle: videoSize
+      - handle: audioConfig
         from_node:
-          - node_id: +typescript#1
-            output_handle: videoSize
-      - handle: imageSize
+          - node_id: +value#2
+            output_handle: audioConfig
+      - handle: imageConfig
         from_node:
-          - node_id: +typescript#1
-            output_handle: imageSize
-      - handle: imagePromptOptions
+          - node_id: +value#2
+            output_handle: imageConfig
+      - handle: videoConfig
+        from_node:
+          - node_id: +value#2
+            output_handle: videoConfig
+      - handle: sceneMetadata
         from_node:
           - node_id: +typescript#3
-            output_handle: imagePromptOptions
-      - handle: AUDIO_API_KEY
-        from_node:
-          - node_id: +value#2
-            output_handle: AUDIO_API_KEY
+            output_handle: metadata
     subflow: self::processor
-  - node_id: +typescript#1
-    title: "formatSize"
-    icon: ":skill-icons:typescript:"
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: videoSize
-          json_schema:
-            enum:
-              - 1080x1080
-              - 1080x1920
-              - 1920x1080
-            ui:options:
-              labels:
-                - 1080x1080（1:1）
-                - 1080x1920（9:16）
-                - 1920x1080（16:9）
-          nullable: false
-          description: 视频尺寸
-      outputs_def:
-        - handle: videoSize
-          json_schema:
-            enum:
-              - 1080x1080
-              - 1080x1920
-              - 1920x1080
-            ui:options:
-              labels:
-                - 1080x1080（1:1）
-                - 1080x1920（9:16）
-                - 1920x1080（16:9）
-          nullable: false
-          description: 视频尺寸
-        - handle: imageSize
-          json_schema:
-            enum:
-              - 1024x1024
-              - 1024x1792
-              - 1792x1024
-            ui:options:
-              labels:
-                - 1024x1024（1:1）
-                - 1024x1792（9:16）
-                - 1792x1024（16:9）
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#5.ts
-    inputs_from:
-      - handle: videoSize
-        value: 1080x1920
-        from_node:
-          - node_id: +value#2
-            output_handle: videoSize
 title: converter

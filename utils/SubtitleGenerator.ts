@@ -2,20 +2,22 @@ import type { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises"
 import path from 'path';
 
-import { AudioAsset } from "./AudioGenerator"
-import { ScriptScene } from "./ScriptParser";
+import { MediaAsset, SubtitleConfig, TimingInfo } from "./constants";
 
-export interface SubtitleAsset {
-    sceneId: number;
-    filePath: string;
+export interface SubtitleAsset extends MediaAsset {
     content: string;
-    startTime: number;
-    endTime: number;
+    duration: number;
+    language: string;
+    encoding: string;
 }
 
 export interface SubtitleGeneratorInputs {
-    scenes: ScriptScene[];
-    audioAssets: AudioAsset[];
+    texts: Array<{
+        id: string;
+        content: string;
+        sentences?: string[];
+        timing: TimingInfo;
+    }>;
     outputDir: string;
 }
 
@@ -24,58 +26,206 @@ export interface SubtitleGeneratorOutputs {
 }
 
 export class SubtitleGenerator {
-    private readonly maxLineLength = 16; // 每行的最大字符数
+    private readonly maxLineLength = 14; // 每行的最大字符数
+    
+    constructor(private context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>) { }
 
     async generateSubtitles(
         params: SubtitleGeneratorInputs,
-        context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>
+        config: SubtitleConfig
     ): Promise<SubtitleGeneratorOutputs> {
-        console.log("Starting subtitle generation...");
-        context.reportProgress(0);
+        this.context.reportLog('Generating subtitles...', "stdout");
 
-        const { scenes, audioAssets, outputDir } = params;
+        const { texts, outputDir } = params;
         const subtitleAssets: SubtitleAsset[] = [];
 
-        // 确保输出目录存在
-        await fs.mkdir(outputDir, { recursive: true });
+        await this.ensureDirectory(outputDir);
 
-        for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            const audioAsset = audioAssets.find(asset => asset.sceneId === scene.id);
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            this.context.reportLog(`Generating subtitle ${i + 1}/${texts.length}`, "stdout");
 
-            if (!audioAsset) {
-                console.warn(`No audio asset found for scene ${scene.id}, skipping`);
-                continue;
-            }
+            const subtitleAsset = await this.generateSingleSubtitle(text, config, outputDir);
+            subtitleAssets.push(subtitleAsset);
 
-            console.log(`Generating subtitle for scene ${scene.id}`);
-
-            // 创建单独的 ASS 字幕文件
-            const subtitleFile = path.join(outputDir, `subtitle_${scene.id}.ass`);
-            const assContent = this.generateAssContent(audioAsset);
-            await fs.writeFile(subtitleFile, assContent, 'utf8');
-
-            subtitleAssets.push({
-                sceneId: scene.id,
-                filePath: subtitleFile,
-                content: audioAsset.sentences ? audioAsset.sentences.join(' ') : audioAsset.transcript,
-                startTime: 0,
-                endTime: audioAsset.duration
-            });
-
-            const progress = ((i + 1) / scenes.length) * 100;
-            context.reportProgress(progress);
-
-            console.log(`✓ Generated subtitle for scene ${scene.id}`);
+            this.context.reportProgress((i + 1) / texts.length * 100);
         }
+
         return { subtitleAssets };
     }
 
-    private generateAssContent(audioAsset: AudioAsset): string {
+    private async generateSingleSubtitle(
+        text: { id: string; content: string; sentences?: string[]; timing: TimingInfo },
+        config: SubtitleConfig,
+        outputDir: string
+    ): Promise<SubtitleAsset> {
+        const filePath = `${outputDir}/subtitle_${text.id}.${config.format}`;
+
+        // 根据格式生成字幕文件
+        const subtitleContent = await this.generateSubtitleContent(text, config);
+        await this.writeSubtitleFile(filePath, subtitleContent, config.encoding);
+
+        const fileSize = await this.getFileSize(filePath);
+
+        return {
+            id: text.id,
+            filePath,
+            content: text.content,
+            duration: text.timing.duration,
+            language: config.language,
+            encoding: config.encoding,
+            fileSize,
+            format: config.format,
+            createdAt: new Date()
+        };
+    }
+
+    private async generateSubtitleContent(
+        text: { id: string; content: string; sentences?: string[]; timing: TimingInfo; },
+        config: SubtitleConfig
+    ): Promise<string> {
+        // 根据格式生成字幕内容
+        switch (config.format) {
+            case 'srt':
+                return this.generateSRT(text);
+            case 'ass':
+                return this.generateASS(text);
+            case 'vtt':
+                return this.generateVTT(text);
+            default:
+                throw new Error(`Unsupported subtitle format: ${config.format}`);
+        }
+    }
+
+    private generateSRT(text: { content: string; sentences?: string[]; timing: TimingInfo; }): string {
+        // 如果有 sentences，按句子分段；否则使用整体内容
+        if (text.sentences && text.sentences.length > 0) {
+            return this.generateSRTWithSentences(text.sentences, text.timing);
+        } else {
+            return this.generateSRTSingle(text.content, text.timing);
+        }
+    }
+
+    private generateSRTWithSentences(sentences: string[], timing: TimingInfo): string {
+        const duration = timing.duration;
+        const sentenceDuration = duration / sentences.length;
+        let srtContent = '';
+        let currentTime = 0; // 从0开始
+
+        for (let i = 0; i < sentences.length; i++) {
+            const endTime = currentTime + sentenceDuration;
+            const formattedText = this.formatTextWithLineBreaks(sentences[i].trim());
+
+            srtContent += `${i + 1}
+${this.formatSRTTime(currentTime)} --> ${this.formatSRTTime(endTime)}
+${formattedText.replace(/\\N/g, '\n')}
+
+`;
+            currentTime = endTime;
+        }
+
+        return srtContent;
+    }
+
+    private generateSRTSingle(content: string, timing: TimingInfo): string {
+        const duration = timing.duration;
+        const formattedText = this.formatTextWithLineBreaks(content);
+
+        return `1
+${this.formatSRTTime(0)} --> ${this.formatSRTTime(duration)}
+${formattedText.replace(/\\N/g, '\n')}
+
+`;
+    }
+
+    private generateASS(text: { content: string; sentences?: string[]; timing: TimingInfo }): string {
         const assHeader = this.generateAssHeader();
-        const assEvents = this.generateAssEvents(audioAsset);
+        
+        // 如果有 sentences，按句子分段；否则使用整体内容
+        let assEvents: string;
+        if (text.sentences && text.sentences.length > 0) {
+            assEvents = this.generateAssEventsWithSentences(text.sentences, text.timing);
+        } else {
+            assEvents = this.generateAssEventsSingle(text.content, text.timing);
+        }
 
         return assHeader + assEvents;
+    }
+
+    private generateAssEventsWithSentences(sentences: string[], timing: TimingInfo): string {
+        // 对于视频段，每个段落都应该从 0 开始
+        const duration = timing.duration;
+        const sentenceDuration = duration / sentences.length;
+        let assEvents = '';
+        let currentTime = 0; // 从 0 开始
+
+        for (const sentence of sentences) {
+            const endTime = currentTime + sentenceDuration;
+            const startTimeFormatted = this.formatAssTime(currentTime);
+            const endTimeFormatted = this.formatAssTime(endTime);
+            const formattedText = this.formatTextWithLineBreaks(sentence.trim());
+
+            assEvents += `Dialogue: 0,${startTimeFormatted},${endTimeFormatted},Default,,20,20,40,,${formattedText}\n`;
+            currentTime = endTime;
+        }
+
+        return `[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+${assEvents}`;
+    }
+
+    private generateAssEventsSingle(content: string, timing: TimingInfo): string {
+        // 对于视频段，每个段落都应该从 0 开始
+        const duration = timing.duration;
+        const startTimeFormatted = this.formatAssTime(0); // 从 0 开始
+        const endTimeFormatted = this.formatAssTime(duration); // 到 duration 结束
+        const formattedText = this.formatTextWithLineBreaks(content);
+
+        return `[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,${startTimeFormatted},${endTimeFormatted},Default,,20,20,40,,${formattedText}
+`;
+    }
+
+    private generateVTT(text: { content: string; sentences?: string[]; timing: TimingInfo }): string {
+        // 如果有 sentences，按句子分段；否则使用整体内容
+        if (text.sentences && text.sentences.length > 0) {
+            return this.generateVTTWithSentences(text.sentences, text.timing);
+        } else {
+            return this.generateVTTSingle(text.content, text.timing);
+        }
+    }
+
+    private generateVTTWithSentences(sentences: string[], timing: TimingInfo): string {
+        const duration = timing.duration;
+        const sentenceDuration = duration / sentences.length;
+        let vttContent = 'WEBVTT\n\n';
+        let currentTime = 0; // 从 0 开始
+
+        for (const sentence of sentences) {
+            const endTime = currentTime + sentenceDuration;
+            const formattedText = this.formatTextWithLineBreaks(sentence.trim());
+
+            vttContent += `${this.formatVTTTime(currentTime)} --> ${this.formatVTTTime(endTime)}
+${formattedText.replace(/\\N/g, '\n')}
+
+`;
+            currentTime = endTime;
+        }
+
+        return vttContent;
+    }
+
+    private generateVTTSingle(content: string, timing: TimingInfo): string {
+        const duration = timing.duration;
+        const formattedText = this.formatTextWithLineBreaks(content);
+
+        return `WEBVTT
+
+${this.formatVTTTime(0)} --> ${this.formatVTTTime(duration)}
+${formattedText.replace(/\\N/g, '\n')}
+
+`;
     }
 
     // 根据不同的屏幕尺寸调整字幕位置及字体大小
@@ -86,43 +236,10 @@ ScriptType: v4.00+
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,20,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
+Style: Default,Arial,16,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
 WrapStyle: 0
 
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
-    }
-
-    private generateAssEvents(audioAsset: AudioAsset): string {
-        let assEvents = '';
-
-        // 如果有 sentences 字段，使用它；否则使用 transcript
-        const sentences = audioAsset.sentences || [audioAsset.transcript];
-
-        if (sentences.length === 0) {
-            return assEvents;
-        }
-
-        // 计算每个句子的时间分配
-        const totalDuration = audioAsset.duration;
-        const sentenceDuration = totalDuration / sentences.length;
-
-        let currentTime = 0;
-
-        for (const sentence of sentences) {
-            const startTime = this.formatAssTime(currentTime);
-            const endTime = this.formatAssTime(currentTime + sentenceDuration);
-
-            // 处理长句子，按最大字符数分行
-            const formattedText = this.formatTextWithLineBreaks(sentence.trim());
-
-            assEvents += `Dialogue: 0,${startTime},${endTime},Default,,20,20,45,,${formattedText}\n`;
-
-            currentTime += sentenceDuration;
-        }
-
-        return assEvents;
     }
 
     private formatTextWithLineBreaks(text: string): string {
@@ -133,6 +250,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         return result.join('\\N');
     }
 
+    private formatSRTTime(seconds: number): string {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        const milliseconds = Math.floor((seconds % 1) * 1000);
+
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${milliseconds.toString().padStart(3, '0')}`;
+    }
+
+    private formatVTTTime(seconds: number): string {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        const milliseconds = Math.floor((seconds % 1) * 1000);
+
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+    }
+
     private formatAssTime(seconds: number): string {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
@@ -140,5 +275,30 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         const centiseconds = Math.floor((seconds % 1) * 100);
 
         return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+    }
+
+    private async writeSubtitleFile(filePath: string, content: string, encoding: string): Promise<void> {
+        try {
+            await fs.writeFile(filePath, content, { encoding: encoding as BufferEncoding });
+        } catch (error) {
+            throw new Error(`Failed to write subtitle file ${filePath}: ${error.message}`);
+        }
+    }
+
+    private async getFileSize(filePath: string): Promise<number> {
+        try {
+            const stats = await fs.stat(filePath);
+            return stats.size;
+        } catch (error) {
+            throw new Error(`Failed to get file size for ${filePath}: ${error.message}`);
+        }
+    }
+
+    private async ensureDirectory(dir: string): Promise<void> {
+        try {
+            await fs.mkdir(dir, { recursive: true });
+        } catch (error) {
+            throw new Error(`Failed to create directory ${dir}: ${error}`);
+        }
     }
 }

@@ -1,9 +1,9 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
+    audioAssets: { id: string; transcript: string }[];
 };
 type Outputs = {
-    scriptList: any[] | null;
+    scriptList: { id: string; transcript: string }[] | null;
 };
 //#endregion
 
@@ -15,12 +15,10 @@ export default async function (
 ): Promise<Partial<Outputs> | undefined | void> {
 
     return {
-        scriptList: params.audioAssets.map(i => {
-            return {
-                transcipt: i.transcript,
-                sceneId: i.sceneId
-            }
-        }
+        scriptList: params.audioAssets.map(i => ({
+                transcript: i.transcript,
+                id: i.id
+            })
         )
     }
 };

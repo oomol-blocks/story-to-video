@@ -4,11 +4,21 @@
       "contentWidth": 485.41009568523305,
       "rfNode": {
         "position": {
-          "x": 143.80492463269843,
-          "y": 27.319805254326717
+          "x": 539.8770977350116,
+          "y": -192.2490515808312
         }
       },
       "sections": {
+        "inputs": {
+          "collapsed": {
+            "texts": {
+              "[0]": false
+            },
+            "sceneMetadata": {
+              "[]": true
+            }
+          }
+        },
         "outputs": {
           "collapsed": {
             "assets": {
@@ -28,11 +38,49 @@
       "contentWidth": 492.92060767990847,
       "rfNode": {
         "position": {
-          "x": 135.80492463269843,
-          "y": 551.1783638888863
+          "x": -250.27588766558907,
+          "y": 810.4817503994136
         }
       },
       "sections": {
+        "inputs": {
+          "collapsed": {
+            "config": {
+              "[]": true
+            }
+          }
+        },
+        "outputs": {
+          "collapsed": {
+            "metadata": {
+              "[]": true
+            }
+          }
+        }
+      }
+    },
+    "+typescript#3": {
+      "contentWidth": 603.5295601583873,
+      "rfNode": {
+        "position": {
+          "x": 3893.5942141685236,
+          "y": 648.9072718071995
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "assets": {
+              "[]": true
+            },
+            "texts": {
+              "[0]": true
+            }
+          }
+        },
         "outputs": {
           "collapsed": {
             "metadata": {
@@ -45,40 +93,12 @@
         }
       }
     },
-    "+typescript#3": {
-      "contentWidth": 623.6739034218134,
-      "rfNode": {
-        "position": {
-          "x": 2724.0007805502437,
-          "y": 883.1783638888863
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "assets": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "metadata": {
-              "[]": true
-            }
-          }
-        }
-      }
-    },
     "+typescript#4": {
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 3553.723173761329,
-          "y": 461.0126539462304
+          "x": 4816.030500683901,
+          "y": 107.47995242155741
         }
       },
       "sections": {
@@ -99,8 +119,14 @@
           "collapsed": {
             "videoAsset": {
               "[]": true
+            },
+            "mergedVideoAsset": {
+              "[]": true
             }
           }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
         }
       }
     },
@@ -108,8 +134,8 @@
       "contentWidth": 628.1942527632791,
       "rfNode": {
         "position": {
-          "x": 671.4883348619558,
-          "y": 1057.5692736924846
+          "x": 1175.0293754031302,
+          "y": 1073.4774821559627
         }
       },
       "sections": {
@@ -121,8 +147,8 @@
     "LLM#2": {
       "rfNode": {
         "position": {
-          "x": 1370.6164046199535,
-          "y": 1057.5692736924846
+          "x": 1958.1451858619494,
+          "y": 1029.897949452676
         }
       },
       "sections": {
@@ -135,13 +161,87 @@
       "contentWidth": 651.5604063122798,
       "rfNode": {
         "position": {
-          "x": 1882.7301135795653,
-          "y": 1082.0526990379738
+          "x": 2504.2543991917178,
+          "y": 883.899829957827
         }
       },
       "sections": {
         "scriptlet": {
           "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#5": {
+      "contentWidth": 414.1431587818697,
+      "rfNode": {
+        "position": {
+          "x": -250.27588766558907,
+          "y": -346.78047779795537
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#8": {
+      "contentWidth": 398.51803161877217,
+      "rfNode": {
+        "position": {
+          "x": -760.3216433761448,
+          "y": 821.7808685966269
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "sceneMetadata": {
+              "[]": true
+            }
+          }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#9": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 3305.087149161498,
+          "y": 899.99931142629
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#10": {
+      "contentWidth": 693.9334083429626,
+      "rfNode": {
+        "position": {
+          "x": 317.44705937641106,
+          "y": 835.6199515120134
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "config": {
+              "[]": true
+            }
+          }
+        },
+        "outputs": {
+          "collapsed": {
+            "metadata": {
+              "[]": true
+            }
+          }
         }
       }
     }
@@ -151,31 +251,85 @@
       "contentWidth": 557.4511694890946,
       "rfNode": {
         "position": {
-          "x": -875.2397869675713,
-          "y": 189.90627986755658
+          "x": -1371.6600043995054,
+          "y": 232.08022875739007
+        }
+      },
+      "sections": {
+        "subflowInput": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "sceneMetadata": {
+              "[]": true
+            },
+            "imageConfig": {
+              "[]": true
+            },
+            "videoConfig": {
+              "[]": true
+            },
+            "audioConfig": {
+              "[]": true
+            }
+          }
         }
       }
     },
     "output": {
       "rfNode": {
         "position": {
-          "x": 4243.542093190244,
-          "y": 444.09473302250444
+          "x": 5592.852919013722,
+          "y": 72.4299699455081
         }
       }
     }
   },
   "commentNodes": {
-    "+comment-1751859343112": {
+    "+comment-1752049454051": {
       "contentWidth": 350,
       "rfNode": {
         "position": {
-          "x": -722.5179192224582,
-          "y": 621.9391250661785
+          "x": 1339.6022471536114,
+          "y": 1606.9570714857457
         }
       },
-      "title": "视频生成 subflow",
-      "content": "### 整体输入\n\n```ts\ntype Input = {\n    scenes: ScriptScene[]; // 场景资源\n    API_KEY: string; // ohMyGPT SK\n    outputDir: string; // 文件输出路径\n    videoSize: VideoSizeType; // 视频尺寸\n    imageSize: DallE3ImageSizeType; // 图片尺寸 --> 目前由 videoSize 决定\n}\n```\n\n### 整体输出\n\n```ts\ntype Output = {\n    videoAsset: {\n        filePath: string; // 最终视频路径\n        duration: number; // 视频时长\n        resolution: string; // 视频分辨率\n        fileSize: number; // 文件大小\n    }\n}\n```"
+      "title": "Comment #1",
+      "content": "**formatTranscript-splitSentence-parseTranscript** 方法的作用是，将 audioAssets 列表中每一项的 transcript 整段话按照句子分割，最后输出。方便字幕展示。"
+    },
+    "+comment-1752049564372": {
+      "contentWidth": 350,
+      "rfNode": {
+        "position": {
+          "x": -798.6600043995054,
+          "y": 1351.4774821559627
+        }
+      },
+      "title": "Comment #2",
+      "content": "**parseToAudio**： 将场景数据处理为 audio 的标准输入"
+    },
+    "+comment-1752049594001": {
+      "contentWidth": 350,
+      "rfNode": {
+        "position": {
+          "x": -69.86440212242337,
+          "y": -617.1631013311301
+        }
+      },
+      "title": "Comment #3",
+      "content": "**parseToImage**： 将场景数据处理为 image 的标准输入"
+    },
+    "+comment-1752049998807": {
+      "contentWidth": 350,
+      "rfNode": {
+        "position": {
+          "x": 2714.574913902901,
+          "y": 1492.1873908606806
+        }
+      },
+      "title": "Comment #4",
+      "content": "**parseToSubtitles** 处理成字幕的标准输入"
     }
   }
 }

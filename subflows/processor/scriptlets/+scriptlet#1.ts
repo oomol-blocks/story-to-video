@@ -5,6 +5,6 @@ export default async function generateImages(
     params: ImageGeneratorInputs,
     context: Context<ImageGeneratorInputs, ImageGeneratorOutputs>
 ): Promise<ImageGeneratorOutputs> {
-    const generator = new ImageGenerator();
-    return await generator.generateImages(params, context);
+    const generator = new ImageGenerator(context);
+    return await generator.generateImages(params);
 }

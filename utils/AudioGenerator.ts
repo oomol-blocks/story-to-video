@@ -1,141 +1,163 @@
 import { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises";
-import path from 'path';
-import * as ffmpeg from "@ffmpeg-installer/ffmpeg";
-import { spawn } from 'child_process';
 
-import { ScriptScene } from "./ScriptParser";
+import { AudioConfig, MediaAsset, TimingInfo } from "./constants";
+import { FFmpegExecutor } from "./FFmpegExcutor";
 
-export interface AudioAsset {
-    sceneId: number;
-    filePath: string;
-    duration: number;
+export interface AudioAsset extends MediaAsset {
+    id: string;
+    timing: TimingInfo;
     transcript: string;
-    sentences: string[];
+    sentences?: string[];
 }
 
 export interface AudioGeneratorInputs {
-    scenes: ScriptScene[];
-    API_KEY: string;
+    texts: Array<{
+        id: string;
+        content: string;
+    }>;
+    config: AudioConfig;
     outputDir: string;
 }
 
 export interface AudioGeneratorOutputs {
     audioAssets: AudioAsset[];
+    totalDuration: number;
 }
 
-export class AudioGenerator {
-    private readonly BASE_URL = "https://cn2us02.opapi.win/v1/audio/speech";
+export class AudioGenerator extends FFmpegExecutor {
+    constructor(
+        private context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>
+    ) {
+        super();
+    }
 
     async generateAudio(
-        params: AudioGeneratorInputs,
-        context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>
+        params: AudioGeneratorInputs
     ): Promise<AudioGeneratorOutputs> {
-        console.log("Starting audio generation...");
-        context.reportProgress(0);
+        this.context.reportLog('Generating audio files...', "stdout");
 
-        const { scenes, API_KEY, outputDir } = params;
+        const { texts, config, outputDir } = params;
         const audioAssets: AudioAsset[] = [];
 
         // 确保输出目录存在
-        await fs.mkdir(outputDir, { recursive: true });
+        await this.ensureDirectory(outputDir);
 
-        for (let i = 0; i < scenes.length; i++) {
-            const scene = scenes[i];
-            console.log(`Generating audio for scene ${scene.id}: ${scene.description}`);
+        // 用于计算累积时间
+        let currentStartTime = 0;
+
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            this.context.reportLog(`Generating audio for text ${i + 1}/${texts.length}`, "stdout");
 
             try {
-                const audioFile = await this.generateSingleAudio(
-                    scene.narration,
-                    scene.id,
-                    API_KEY,
-                    outputDir
-                );
+                const audioAsset = await this.generateSingleAudio(text, config, outputDir, currentStartTime);
+                audioAssets.push(audioAsset);
 
-                // 获取实际音频时长
-                const actualDuration = await this.getAudioDuration(audioFile);
-
-                audioAssets.push({
-                    sceneId: scene.id,
-                    filePath: audioFile,
-                    duration: actualDuration,
-                    transcript: scene.narration,
-                    sentences: []
-                });
-
-                const progress = ((i + 1) / scenes.length) * 100;
-                context.reportProgress(progress);
-
-                console.log(`✓ Generated audio for scene ${scene.id}`);
+                currentStartTime = audioAsset.timing.endTime;
             } catch (error) {
-                console.error(`Failed to generate audio for scene ${scene.id}:`, error);
+                this.context.reportLog(`Failed to generate audio for text ${text.id}: ${error}`, "stderr");
                 throw error;
             }
+
+            await this.context.reportProgress((i + 1) / texts.length * 100);
         }
 
-        const totalDuration = audioAssets.reduce((sum, asset) => sum + asset.duration, 0);
+        const totalDuration = audioAssets.reduce((sum, asset) => sum + asset.timing.duration, 0);
 
-        console.log(`✓ Generated ${audioAssets.length} audio files, total duration: ${totalDuration}s`);
-
-        return { audioAssets };
+        this.context.reportLog(`Audio generation completed. Total duration: ${totalDuration.toFixed(2)}s`, "stdout");
+        return { audioAssets, totalDuration };
     }
 
     private async generateSingleAudio(
+        text: { id: string; content: string; },
+        config: AudioConfig,
+        outputDir: string,
+        startTime: number
+    ): Promise<AudioAsset> {
+        const filePath = `${outputDir}/audio_${text.id}.${config.format}`;
+
+        await this.callAudioAPI(text.content, config, filePath);
+
+        const audioInfo = await this.getAudioInfo(filePath);
+
+        const timing: TimingInfo = {
+            startTime: startTime,
+            endTime: startTime + audioInfo.duration,
+            duration: audioInfo.duration
+        };
+
+        return {
+            id: text.id,
+            filePath,
+            timing,
+            transcript: text.content,
+            fileSize: audioInfo.fileSize,
+            format: config.format,
+            createdAt: new Date()
+        };
+    }
+
+    private async callAudioAPI(
         text: string,
-        sceneId: number,
-        apiKey: string,
-        outputDir: string
-    ): Promise<string> {
-        const audioFile = path.join(outputDir, `audio_${sceneId}.mp3`);
+        config: AudioConfig,
+        outputPath: string
+    ): Promise<void> {
+        const requestFormat = config.requestFormat || 'json';
+        let body: string | URLSearchParams;
+        let headers: Record<string, string>;
 
-        const urlencoded = new URLSearchParams();
-        urlencoded.append("model", "tts-1");
-        urlencoded.append("input", text);
-        urlencoded.append("voice", "alloy");
-        urlencoded.append("response_format", "mp3");
-        urlencoded.append("speed", "1");
+        if (requestFormat === 'json') {
+            // JSON 格式请求
+            const requestBody = {
+                model: config.model,
+                input: text,
+                voice: config.voice || "alloy",
+                response_format: config.format || "mp3",
+                speed: config.speed || 1
+            };
 
-        const response = await fetch(this.BASE_URL, {
+            body = JSON.stringify(requestBody);
+            headers = {
+                'Authorization': `Bearer ${config.apiKey}`,
+                'Content-Type': 'application/json'
+            };
+        } else {
+            // Form 格式请求
+            const urlencoded = new URLSearchParams();
+            urlencoded.append("model", config.model);
+            urlencoded.append("input", text);
+            urlencoded.append("voice", config.voice || "alloy");
+            urlencoded.append("response_format", config.format || "mp3");
+            urlencoded.append("speed", config.speed?.toString() || "1");
+
+            body = urlencoded;
+            headers = {
+                'Authorization': `Bearer ${config.apiKey}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            };
+        }
+
+        const response = await fetch(config.apiEndpoint, {
             method: 'POST',
-            body: urlencoded,
-            headers: {
-                'Authorization': `Bearer ${apiKey}`
-            }
+            body,
+            headers
         });
 
         if (!response.ok) {
-            throw new Error(`TTS API failed: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`TTS API failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const audioBuffer = await response.arrayBuffer();
-        await fs.writeFile(audioFile, Buffer.from(audioBuffer));
-
-        return audioFile;
+        await fs.writeFile(outputPath, Buffer.from(audioBuffer));
     }
 
-    private async getAudioDuration(audioPath: string): Promise<number> {
-        return new Promise((resolve, reject) => {
-            const args = ['-i', audioPath, '-f', 'null', '-'];
-            const process = spawn(ffmpeg.path, args);
-            let stderr = '';
-
-            process.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            process.on('close', () => {
-                const durationMatch = stderr.match(/Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})/);
-                if (durationMatch) {
-                    const hours = parseInt(durationMatch[1]);
-                    const minutes = parseInt(durationMatch[2]);
-                    const seconds = parseFloat(durationMatch[3]);
-                    resolve(hours * 3600 + minutes * 60 + seconds);
-                } else {
-                    reject(new Error('Could not parse audio duration'));
-                }
-            });
-
-            process.on('error', reject);
-        });
+    private async ensureDirectory(dir: string): Promise<void> {
+        try {
+            await fs.mkdir(dir, { recursive: true });
+        } catch (error) {
+            throw new Error(`Failed to create directory ${dir}: ${error}`);
+        }
     }
 }

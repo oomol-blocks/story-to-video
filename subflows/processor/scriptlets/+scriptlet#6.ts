@@ -1,10 +1,10 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
+    audioAssets: { id: number; duration: number; transcript: string }[];
     transcriptString: string;
 };
 type Outputs = {
-    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
+    audioAssets: { id: number; duration: number; transcript: string; sentences: [] }[];
 };
 //#endregion
 
@@ -46,7 +46,7 @@ export default async function (
     return {
         audioAssets: params.audioAssets.map(i => {
             const transcript = transcripts.find(script =>
-                script.sceneId === i.sceneId &&
+                script.id === i.id &&
                 script.sentences &&
                 Array.isArray(script.sentences)
             );

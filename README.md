@@ -104,4 +104,5 @@ src/
 
 - 📧 邮箱: honeysyt@gmail.com
 - 🐛 问题反馈: [GitHub Issues](https://github.com/oomol-blocks/story-to-video/issues)
-- 📖 微信群支持: [微信群支持](https://oomol.com/img/qrcode@3x.png)
+- 📖 微信群支持:   
+![微信群支持](https://oomol.com/img/qrcode@3x.png)

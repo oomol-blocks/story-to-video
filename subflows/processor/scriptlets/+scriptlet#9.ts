@@ -1,21 +1,9 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: {
-        id: string; duration: number; timing: {
-            startTime: number;
-            endTime: number;
-            duration: number;
-        }; transcript: string; sentences: []
-    }[];
+    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
 };
 type Outputs = {
-    texts: {
-        id: string; content: string; timing: {
-            startTime: number;
-            endTime: number;
-            duration: number;
-        };
-    }[] | null;
+    texts: { id: string; content: string; timing: string }[] | null;
 };
 //#endregion
 

@@ -1,10 +1,10 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: { id: number; duration: number; transcript: string }[];
+    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
     transcriptString: string;
 };
 type Outputs = {
-    audioAssets: { id: number; duration: number; transcript: string; sentences: [] }[];
+    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
 };
 //#endregion
 

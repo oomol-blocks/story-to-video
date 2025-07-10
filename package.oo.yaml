@@ -8,3 +8,9 @@ scripts:
 dependencies:
   llm: 0.2.9
   oomol-preview: 0.0.5
+icon: ./icon.png
+name: story-to-video
+description: AI 视频生成工具
+displayName: story-to-video
+repository: https://github.com/oomol-blocks/story-to-video
+hide_source: true

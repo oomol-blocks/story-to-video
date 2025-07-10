@@ -3,7 +3,7 @@ type Inputs = {
     audioAssets: { id: string; transcript: string }[];
 };
 type Outputs = {
-    scriptList: { id: string; transcript: string }[] | null;
+    scriptList: any[] | null;
 };
 //#endregion
 

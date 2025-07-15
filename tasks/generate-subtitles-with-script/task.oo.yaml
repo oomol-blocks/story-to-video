@@ -1,0 +1,32 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: outputDir
+    json_schema:
+      {}
+  - handle: texts
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+        properties:
+          id:
+            type: string
+          content:
+            type: string
+          timing:
+            type: string
+    nullable: true
+outputs_def:
+  - handle: subtitleAssets
+    json_schema:
+      type: array
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: Generate Subtitles with Script
+icon: ":fa6-solid:marker:"

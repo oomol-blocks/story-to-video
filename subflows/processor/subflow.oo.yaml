@@ -1,221 +1,4 @@
 nodes:
-  - node_id: +typescript#1
-    title: images
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: prompts
-        value:
-          - {}
-        from_flow:
-          []
-        from_node:
-          - node_id: +typescript#5
-            output_handle: prompts
-      - handle: config
-        from_flow:
-          - input_handle: imageConfig
-      - handle: outputDir
-        value: /oomol-driver/oomol-storage/output2
-        from_flow:
-          - input_handle: outputDir
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: prompts
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-              properties:
-                id:
-                  type: string
-                content:
-                  type: string
-          nullable: false
-        - handle: config
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              apiEndpoint:
-                enum:
-                  - https://ark.cn-beijing.volces.com/api/v3/images/generations
-                ui:options:
-                  labels:
-                    - DOUBAO_IMAGE_BASE_URL
-              model:
-                enum:
-                  - doubao-seedream-3-0-t2i-250415
-                ui:options:
-                  labels:
-                    - DOUBAO_SEEDREAM_T2I
-              apiKey:
-                contentMediaType: oomol/secret
-                type: string
-              format:
-                enum:
-                  - png
-                ui:options:
-                  labels:
-                    - png
-              size:
-                enum:
-                  - 1024x1024
-                  - 720x1280
-                  - 1280x720
-                ui:options:
-                  labels:
-                    - 1024x1024（1:1）
-                    - 720x1280（9:16）
-                    - 1280x720（16:9）
-          nullable: false
-        - handle: outputDir
-          json_schema:
-            type: string
-            ui:widget: dir
-          nullable: false
-      outputs_def:
-        - handle: imageAssets
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#1.ts
-          spawn: false
-    ignore: false
-  - node_id: +typescript#2
-    title: audio
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: outputDir
-        from_flow:
-          - input_handle: outputDir
-        from_node:
-          []
-      - handle: texts
-        from_node:
-          - node_id: +typescript#8
-            output_handle: texts
-      - handle: config
-        from_flow:
-          - input_handle: audioConfig
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: config
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              apiEndpoint:
-                enum:
-                  - https://cn2us02.opapi.win/v1/audio/speech
-                ui:options:
-                  labels:
-                    - GPT_AUDIO_BASE_URL
-              model:
-                enum:
-                  - tts-1
-                ui:options:
-                  labels:
-                    - GPT_TTS_1
-              apiKey:
-                contentMediaType: oomol/secret
-                type: string
-              format:
-                enum:
-                  - mp3
-                ui:options:
-                  labels:
-                    - MP3
-          nullable: false
-        - handle: outputDir
-          json_schema:
-            {}
-        - handle: texts
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-              properties:
-                id:
-                  type: string
-                content:
-                  type: string
-          nullable: false
-          description: Output
-      outputs_def:
-        - handle: audioAssets
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#2.ts
-          spawn: false
-    ignore: false
-  - node_id: +typescript#3
-    title: subtitles
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: texts
-        value:
-          - {}
-        from_flow:
-          []
-        from_node:
-          - node_id: +typescript#9
-            output_handle: texts
-      - handle: outputDir
-        from_flow:
-          - input_handle: outputDir
-        from_node:
-          []
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: outputDir
-          json_schema:
-            {}
-        - handle: texts
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-              properties:
-                id:
-                  type: string
-                content:
-                  type: string
-                timing:
-                  type: string
-          nullable: true
-      outputs_def:
-        - handle: subtitleAssets
-          json_schema:
-            type: array
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#3.ts
-          spawn: false
   - node_id: +typescript#4
     title: video
     icon: ":skill-icons:typescript:"
@@ -231,7 +14,7 @@ nodes:
           - input_handle: videoConfig
       - handle: subtitleAssets
         from_node:
-          - node_id: +typescript#3
+          - node_id: generate-subtitles-with-script#1
             output_handle: subtitleAssets
       - handle: audioAssets
         from_node:
@@ -239,7 +22,7 @@ nodes:
             output_handle: audioAssets
       - handle: imageAssets
         from_node:
-          - node_id: +typescript#1
+          - node_id: generate-images-with-ai#1
             output_handle: imageAssets
     task:
       ui:
@@ -468,6 +251,7 @@ nodes:
         default_width: 450
       inputs_def:
         - handle: scenes
+          description: Output
           json_schema:
             type: array
             items:
@@ -485,7 +269,6 @@ nodes:
                 estimatedDuration:
                   type: number
           nullable: false
-          description: Output
         - handle: sceneMetadata
           json_schema:
             type: object
@@ -506,9 +289,11 @@ nodes:
               apiEndpoint:
                 enum:
                   - https://ark.cn-beijing.volces.com/api/v3/images/generations
+                  - https://console.oomol.com/v1/images/generations
                 ui:options:
                   labels:
                     - DOUBAO_IMAGE_BASE_URL
+                    - OOMOL_DOUBAO
               model:
                 enum:
                   - doubao-seedream-3-0-t2i-250415
@@ -672,7 +457,7 @@ nodes:
     inputs_from:
       - handle: audioAssets
         from_node:
-          - node_id: +typescript#2
+          - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
       - handle: targetDuration
         value: 10
@@ -704,6 +489,55 @@ nodes:
         options:
           entry: scriptlets/+scriptlet#10.ts
           spawn: false
+  - node_id: generate-images-with-ai#1
+    task: self::generate-images-with-ai
+    inputs_from:
+      - handle: prompts
+        value:
+          - {}
+        from_flow:
+          []
+        from_node:
+          - node_id: +typescript#5
+            output_handle: prompts
+      - handle: config
+        from_flow:
+          - input_handle: imageConfig
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage/output2
+        from_flow:
+          - input_handle: outputDir
+  - node_id: generate-audio-with-ai#1
+    task: self::generate-audio-with-ai
+    inputs_from:
+      - handle: outputDir
+        from_flow:
+          - input_handle: outputDir
+        from_node:
+          []
+      - handle: texts
+        from_node:
+          - node_id: +typescript#8
+            output_handle: texts
+      - handle: config
+        from_flow:
+          - input_handle: audioConfig
+  - node_id: generate-subtitles-with-script#1
+    task: self::generate-subtitles-with-script
+    inputs_from:
+      - handle: texts
+        value:
+          - {}
+        from_flow:
+          []
+        from_node:
+          - node_id: +typescript#9
+            output_handle: texts
+      - handle: outputDir
+        from_flow:
+          - input_handle: outputDir
+        from_node:
+          []
 inputs_def:
   - handle: scenes
     description: Output
@@ -745,9 +579,11 @@ inputs_def:
         apiEndpoint:
           enum:
             - https://ark.cn-beijing.volces.com/api/v3/images/generations
+            - https://console.oomol.com/v1/images/generations
           ui:options:
             labels:
               - DOUBAO_IMAGE_BASE_URL
+              - OOMOL_DOUBAO
         model:
           enum:
             - doubao-seedream-3-0-t2i-250415

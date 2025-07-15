@@ -1,0 +1,31 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: content
+    description: Input
+    json_schema:
+      type: string
+    nullable: true
+outputs_def:
+  - handle: scenes
+    description: Output
+    json_schema:
+      type: array
+  - handle: metadata
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        historicalPeriod:
+          type: string
+        characterTraits:
+          type: string
+        baseImageStyle:
+          type: string
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: Parse LLM Script
+icon: ":twemoji:cricket-game:"

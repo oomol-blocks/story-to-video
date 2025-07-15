@@ -1,0 +1,77 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: prompts
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+        properties:
+          id:
+            type: string
+          content:
+            type: string
+    value:
+      - {}
+    nullable: false
+  - handle: config
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        apiEndpoint:
+          enum:
+            - https://ark.cn-beijing.volces.com/api/v3/images/generations
+            - https://console.oomol.com/v1/images/generations
+          ui:options:
+            labels:
+              - DOUBAO_IMAGE_BASE_URL
+              - OOMOL_DOUBAO
+        model:
+          enum:
+            - doubao-seedream-3-0-t2i-250415
+          ui:options:
+            labels:
+              - DOUBAO_SEEDREAM_T2I
+        apiKey:
+          contentMediaType: oomol/secret
+          type: string
+        format:
+          enum:
+            - png
+          ui:options:
+            labels:
+              - png
+        size:
+          enum:
+            - 1024x1024
+            - 720x1280
+            - 1280x720
+          ui:options:
+            labels:
+              - 1024x1024（1:1）
+              - 720x1280（9:16）
+              - 1280x720（16:9）
+    nullable: false
+  - handle: outputDir
+    json_schema:
+      type: string
+      ui:widget: dir
+    nullable: false
+outputs_def:
+  - handle: imageAssets
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: Generate Images With AI
+icon: ":fa6-solid:images:"

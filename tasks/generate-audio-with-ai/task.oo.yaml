@@ -1,0 +1,61 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: config
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        apiEndpoint:
+          enum:
+            - https://cn2us02.opapi.win/v1/audio/speech
+          ui:options:
+            labels:
+              - GPT_AUDIO_BASE_URL
+        model:
+          enum:
+            - tts-1
+          ui:options:
+            labels:
+              - GPT_TTS_1
+        apiKey:
+          contentMediaType: oomol/secret
+          type: string
+        format:
+          enum:
+            - mp3
+          ui:options:
+            labels:
+              - MP3
+    nullable: false
+  - handle: outputDir
+    json_schema:
+      {}
+  - handle: texts
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+        properties:
+          id:
+            type: string
+          content:
+            type: string
+    nullable: false
+outputs_def:
+  - handle: audioAssets
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: Generate Audio With AI
+icon: ":fa6-solid:file-audio:"

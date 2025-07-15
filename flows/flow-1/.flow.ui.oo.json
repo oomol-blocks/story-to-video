@@ -4,18 +4,18 @@
       "contentWidth": 590.538420769109,
       "rfNode": {
         "position": {
-          "x": -568.6017500183732,
-          "y": -15.864883209016341
+          "x": -523.5816676944204,
+          "y": -70.88942827162536
         }
       },
       "sections": {
         "value": {
           "collapsed": {
             "audioConfig": {
-              "[]": false
+              "[]": true
             },
             "imageConfig": {
-              "[]": false
+              "[]": true
             },
             "videoConfig": {
               "[]": true
@@ -36,33 +36,6 @@
           "cardCollapsed": true
         },
         "preview": {
-          "cardCollapsed": true
-        }
-      }
-    },
-    "+typescript#3": {
-      "contentWidth": 350.4909266445239,
-      "rfNode": {
-        "position": {
-          "x": 803.4136228767047,
-          "y": -346.1670982864209
-        }
-      },
-      "sections": {
-        "outputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "imagePromptOptions": {
-              "[]": true
-            },
-            "metadata": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
           "cardCollapsed": true
         }
       }
@@ -107,19 +80,24 @@
           }
         }
       }
-    }
-  },
-  "commentNodes": {
-    "+comment-1751892563353": {
-      "contentWidth": 350,
+    },
+    "parse-LLM-script#1": {
+      "contentWidth": 350.4909266445239,
       "rfNode": {
         "position": {
-          "x": 437.4136228767048,
-          "y": -631.1149282196108
+          "x": 803.4136228767047,
+          "y": -346.1670982864209
         }
       },
-      "title": "Comment #1",
-      "content": "作用：根据输入的文本生成脚本。\n\n输出：输出为 String。parseScript 格式化为后续需要用到的结构：scenes。"
+      "sections": {
+        "outputs": {
+          "collapsed": {
+            "metadata": {
+              "[]": true
+            }
+          }
+        }
+      }
     }
   }
 }

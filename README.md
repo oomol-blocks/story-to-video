@@ -28,42 +28,46 @@
 
 创建配置文件或环境变量：
 
-**豆包 AI**
-
-* `API_KEY` [生成地址](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
-* 开通文生图大模型：[Doubao-Seedream-3.0-t2i](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-* 开通图生视频大模型：[Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-
-**ohMyGPT**
-
-* `API_KEY` [生成地址](https://www.ohmygpt.com/settings)
-
 ```typescript
 const config = {
-  // 图像生成 API
+  // 图像生成 API（OOMOL）
   imageConfig: {
-    apiKey: "your-doubao-api-key",
-    apiEndpoint: "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+    apiKey: "your-oomol-api-key",
+    apiEndpoint: "https://console.oomol.com/v1/images/generations",
     model: "doubao-seedream-3-0-t2i-250415",
     size: "720x1280"
   },
+    
+  // 视频生成 API (豆包，Doubao-Seedance-1.0-lite-i2v 大模型)
+  videoConfig: {
+    apiKey: "your-doubao-api-key",
+    size: "1280x720",
+    format: "mp4"
+  },
   
-  // 语音合成 API。当前使用 ohMyGPT tts-1 大模型。
+  // 语音合成 API。当前使用 ohMyGPT tts-1 大模型
   audioConfig: {
     apiKey: "your-tts-api-key",
     apiEndpoint: "https://cn2us02.opapi.win/v1/audio/speech",
     model: "tts-1",
     voice: "alloy"
-  },
-  
-  // 视频生成 API (豆包)
-  videoConfig: {
-    apiKey: "your-doubao-api-key",
-    size: "1280x720",
-    format: "mp4"
   }
 };
 ```
+
+**OOMOL AI**
+
+* `imageConfig` `API_KEY` [生成地址](https://console.oomol.com/panel/api-key)
+
+**豆包 AI**
+
+* `API_KEY` [生成地址](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
+* `videoConfig` 开通图生视频大模型：[Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
+
+**ohMyGPT**
+
+* `audioConfig` 的 `API_KEY` [生成地址](https://www.ohmygpt.com/apis/keys)
+
 
 ## 📁 项目结构
 
@@ -104,5 +108,4 @@ src/
 
 - 📧 邮箱: honeysyt@gmail.com
 - 🐛 问题反馈: [GitHub Issues](https://github.com/oomol-blocks/story-to-video/issues)
-- 📖 微信群支持:   
-![微信群支持](https://oomol.com/img/qrcode@3x.png)
+- 📖 微信群支持: [微信群支持](https://oomol.com/img/qrcode@3x.png)

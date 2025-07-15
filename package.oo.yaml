@@ -1,7 +1,5 @@
-version: 0.0.1
+version: 0.0.9
 scripts:
-  # Script executed when the container is first loaded
-  # eg: bootstrap: poetry add pandas
   bootstrap: |
     npm install
     poetry install --no-root
@@ -13,4 +11,4 @@ name: story-to-video
 description: AI 视频生成工具
 displayName: story-to-video
 repository: https://github.com/oomol-blocks/story-to-video
-hide_source: true
+releaseNotes: disable template pkg

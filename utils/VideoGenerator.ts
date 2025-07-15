@@ -151,9 +151,8 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     }
 
     private async callVideoAPI(segment: Segment): Promise<string> {
-        // ... 保持原有的API调用逻辑不变
         try {
-            console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
+            // console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
             const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${this.VIDEO_DURATION}`;
 
             const content = [
@@ -314,7 +313,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         imageAssets: ImageAsset[],
         subtitleAssets: SubtitleAsset[],
         tempVideoFiles: string[],
-        videoSegments: VideoAsset[] = [] // 可选：如果只保留合并视频，可以删除各个视频段
+        videoSegments: VideoAsset[] = []
     ): Promise<void> {
         this.context.reportLog("Starting cleanup of temporary files...", "stdout");
 
@@ -365,44 +364,6 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    /**
-     * 清理输出目录中的特定类型文件
-     */
-    private async cleanupDirectoryByPattern(
-        outputDir: string,
-        patterns: string[],
-        description: string
-    ): Promise<void> {
-        this.context.reportLog(`Cleaning up ${description} in directory: ${outputDir}`, "stdout");
-
-        try {
-            const files = await fs.readdir(outputDir);
-            const matchingFiles = files.filter(file =>
-                patterns.some(pattern => {
-                    const regex = new RegExp(pattern, 'i');
-                    return regex.test(file);
-                })
-            );
-
-            let deletedCount = 0;
-            for (const file of matchingFiles) {
-                try {
-                    const filePath = path.join(outputDir, file);
-                    await fs.unlink(filePath);
-                    deletedCount++;
-                    this.context.reportLog(`✓ Deleted: ${file}`, "stdout");
-                } catch (error) {
-                    this.context.reportLog(`✗ Failed to delete: ${file} - ${error.message}`, "stderr");
-                }
-            }
-
-            this.context.reportLog(`✓ Cleaned up ${deletedCount} ${description} files`, "stdout");
-        } catch (error) {
-            this.context.reportLog(`Failed to cleanup ${description} in ${outputDir}: ${error.message}`, "stderr");
-        }
-    }
-
-    // ... 其他原有方法保持不变
     private async createDoubaoTask(request: any): Promise<any> {
         const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks`, {
             method: 'POST',

@@ -26,7 +26,7 @@ export interface SubtitleGeneratorOutputs {
 }
 
 export class SubtitleGenerator {
-    private readonly maxLineLength = 14; // 每行的最大字符数
+    private readonly maxLineLength = 12; // 每行的最大字符数
     
     constructor(private context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>) { }
 
@@ -236,7 +236,7 @@ ScriptType: v4.00+
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,16,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
+Style: Default,Arial,14,&Hffffff,&Hffffff,&H000000,&H000000,0,0,0,0,100,100,0,0,1,1,0,2,20,20,130,1
 WrapStyle: 0
 
 `;

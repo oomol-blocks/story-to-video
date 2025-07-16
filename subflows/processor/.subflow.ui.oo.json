@@ -104,6 +104,9 @@
               "[]": true
             }
           }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
         }
       }
     },
@@ -143,6 +146,9 @@
               "[]": true
             }
           }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
         }
       }
     },
@@ -160,7 +166,7 @@
       "rfNode": {
         "position": {
           "x": -250.27588766558907,
-          "y": 810.4817503994136
+          "y": 821.7808685966269
         }
       }
     },
@@ -179,8 +185,29 @@
       "contentWidth": 557.4511694890946,
       "rfNode": {
         "position": {
-          "x": -1371.6600043995054,
-          "y": 232.08022875739007
+          "x": -1469.6653855754075,
+          "y": 229.68985360675833
+        }
+      },
+      "sections": {
+        "subflowInput": {
+          "collapsed": {
+            "sceneMetadata": {
+              "[]": true
+            },
+            "scenes": {
+              "[]": true
+            },
+            "imageConfig": {
+              "[]": true
+            },
+            "videoConfig": {
+              "[]": true
+            },
+            "audioConfig": {
+              "[]": true
+            }
+          }
         }
       }
     },
@@ -204,39 +231,6 @@
       },
       "title": "Comment #1",
       "content": "**formatTranscript-splitSentence-parseTranscript** 方法的作用是，将 audioAssets 列表中每一项的 transcript 整段话按照句子分割，最后输出。方便字幕展示。"
-    },
-    "+comment-1752049564372": {
-      "contentWidth": 350,
-      "rfNode": {
-        "position": {
-          "x": -798.6600043995054,
-          "y": 1351.4774821559627
-        }
-      },
-      "title": "Comment #2",
-      "content": "**parseToAudio**： 将场景数据处理为 audio 的标准输入"
-    },
-    "+comment-1752049594001": {
-      "contentWidth": 350,
-      "rfNode": {
-        "position": {
-          "x": -69.86440212242337,
-          "y": -617.1631013311301
-        }
-      },
-      "title": "Comment #3",
-      "content": "**parseToImage**： 将场景数据处理为 image 的标准输入"
-    },
-    "+comment-1752049998807": {
-      "contentWidth": 350,
-      "rfNode": {
-        "position": {
-          "x": 2714.574913902901,
-          "y": 1492.1873908606806
-        }
-      },
-      "title": "Comment #4",
-      "content": "**parseToSubtitles** 处理成字幕的标准输入"
     }
   }
 }

@@ -150,7 +150,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    private async callVideoAPI(segment: Segment): Promise<string> {
+    async callVideoAPI(segment: Segment): Promise<string> {
         try {
             // console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
             const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${this.VIDEO_DURATION}`;
@@ -196,7 +196,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    private async compositeVideo(
+    async compositeVideo(
         segment: Segment,
         inputPath: string,
         outputPath: string,
@@ -236,7 +236,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    private async mergeVideoSegments(
+    async mergeVideoSegments(
         videoAssets: VideoAsset[],
         config: VideoConfig,
         outputDir: string
@@ -308,7 +308,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     /**
      * 清理临时文件
      */
-    private async cleanupTemporaryFiles(
+    async cleanupTemporaryFiles(
         audioAssets: AudioAsset[],
         imageAssets: ImageAsset[],
         subtitleAssets: SubtitleAsset[],
@@ -419,7 +419,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`);
     }
 
-    private async downloadVideo(url: string, filePath: string): Promise<void> {
+    async downloadVideo(url: string, filePath: string): Promise<void> {
         this.context.reportLog(`Downloading video from: ${url}`, "stdout");
 
         try {

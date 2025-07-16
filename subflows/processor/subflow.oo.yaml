@@ -507,6 +507,7 @@ nodes:
         value: /oomol-driver/oomol-storage/output2
         from_flow:
           - input_handle: outputDir
+    ignore: false
   - node_id: generate-audio-with-ai#1
     task: self::generate-audio-with-ai
     inputs_from:

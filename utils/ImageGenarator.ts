@@ -52,7 +52,7 @@ export class ImageGenerator {
         return { imageAssets }
     }
 
-    private async generateSingleImage(
+    async generateSingleImage(
         prompt: { id: string; content: string; style?: string; },
         config: ImageConfig,
         outputDir: string

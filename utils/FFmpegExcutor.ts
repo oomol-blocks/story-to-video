@@ -131,7 +131,7 @@ export abstract class FFmpegExecutor {
         }
     }
 
-    protected async getAudioInfo(inputPath: string): Promise<AudioInfo> {
+    async getAudioInfo(inputPath: string): Promise<AudioInfo> {
         const args = [
             '-v', 'quiet',
             '-print_format', 'json',
@@ -212,7 +212,7 @@ export abstract class FFmpegExecutor {
         }
     }
 
-    protected async getVideoInfo(inputPath: string): Promise<VideoInfo> {
+    async getVideoInfo(inputPath: string): Promise<VideoInfo> {
         const args = [
             '-v', 'quiet',
             '-print_format', 'json',

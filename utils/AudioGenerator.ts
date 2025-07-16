@@ -32,55 +32,27 @@ export class AudioGenerator extends FFmpegExecutor {
         super();
     }
 
-    async generateAudio(
-        params: AudioGeneratorInputs
-    ): Promise<AudioGeneratorOutputs> {
-        this.context.reportLog('Generating audio files...', "stdout");
-
-        const { texts, config, outputDir } = params;
-        const audioAssets: AudioAsset[] = [];
-
-        // 确保输出目录存在
-        await this.ensureDirectory(outputDir);
-
-        // 用于计算累积时间
-        let currentStartTime = 0;
-
-        for (let i = 0; i < texts.length; i++) {
-            const text = texts[i];
-            this.context.reportLog(`Generating audio for text ${i + 1}/${texts.length}`, "stdout");
-
-            try {
-                const audioAsset = await this.generateSingleAudio(text, config, outputDir, currentStartTime);
-                audioAssets.push(audioAsset);
-
-                currentStartTime = audioAsset.timing.endTime;
-            } catch (error) {
-                this.context.reportLog(`Failed to generate audio for text ${text.id}: ${error}`, "stderr");
-                throw error;
-            }
-
-            await this.context.reportProgress((i + 1) / texts.length * 100);
-        }
-
-        const totalDuration = audioAssets.reduce((sum, asset) => sum + asset.timing.duration, 0);
-
-        this.context.reportLog(`Audio generation completed. Total duration: ${totalDuration.toFixed(2)}s`, "stdout");
-        return { audioAssets, totalDuration };
-    }
-
-    private async generateSingleAudio(
+    async generateSingleAudio(
         text: { id: string; content: string; },
         config: AudioConfig,
         outputDir: string,
         startTime: number
     ): Promise<AudioAsset> {
+        this.context.reportLog(`Generating audio for text: ${text.content}`, "stdout");
+
+        // 确保输出目录存在
+        await this.ensureDirectory(outputDir);
+
+        // 生成文件路径
         const filePath = `${outputDir}/audio_${text.id}.${config.format}`;
 
+        // 调用API生成音频
         await this.callAudioAPI(text.content, config, filePath);
 
+        // 获取音频信息
         const audioInfo = await this.getAudioInfo(filePath);
 
+        // 构建时间信息
         const timing: TimingInfo = {
             startTime: startTime,
             endTime: startTime + audioInfo.duration,
@@ -138,19 +110,23 @@ export class AudioGenerator extends FFmpegExecutor {
             };
         }
 
-        const response = await fetch(config.apiEndpoint, {
-            method: 'POST',
-            body,
-            headers
-        });
+        try {
+            const response = await fetch(config.apiEndpoint, {
+                method: 'POST',
+                body,
+                headers
+            });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`TTS API failed: ${response.status} ${response.statusText} - ${errorText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`TTS API failed: ${response.status} ${response.statusText} - ${errorText}`);
+            }
+
+            const audioBuffer = await response.arrayBuffer();
+            await fs.writeFile(outputPath, Buffer.from(audioBuffer));
+        } catch (e) {
+            throw new Error(`TTS API failed: ${e.message}`);
         }
-
-        const audioBuffer = await response.arrayBuffer();
-        await fs.writeFile(outputPath, Buffer.from(audioBuffer));
     }
 
     private async ensureDirectory(dir: string): Promise<void> {

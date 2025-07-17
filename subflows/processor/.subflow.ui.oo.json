@@ -93,8 +93,8 @@
       "contentWidth": 398.51803161877217,
       "rfNode": {
         "position": {
-          "x": -760.3216433761448,
-          "y": 821.7808685966269
+          "x": -607.0998985578422,
+          "y": 812.89844860716
         }
       },
       "sections": {
@@ -124,34 +124,6 @@
         }
       }
     },
-    "+typescript#10": {
-      "contentWidth": 693.9334083429626,
-      "rfNode": {
-        "position": {
-          "x": 317.44705937641106,
-          "y": 835.6199515120134
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "config": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "metadata": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
     "generate-images-with-ai#1": {
       "contentWidth": 485.41009568523305,
       "rfNode": {
@@ -165,7 +137,7 @@
       "contentWidth": 492.92060767990847,
       "rfNode": {
         "position": {
-          "x": -250.27588766558907,
+          "x": 179.72411233441093,
           "y": 821.7808685966269
         }
       }
@@ -192,10 +164,10 @@
       "sections": {
         "subflowInput": {
           "collapsed": {
-            "sceneMetadata": {
-              "[]": true
-            },
             "scenes": {
+              "[0]": true
+            },
+            "sceneMetadata": {
               "[]": true
             },
             "imageConfig": {

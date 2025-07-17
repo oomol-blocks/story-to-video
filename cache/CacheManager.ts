@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "path";
 import { createHash } from "node:crypto";
 import type { Context } from "@oomol/types/oocana";
+import EventEmitter from "node:events";
 
 export enum CacheStatus {
     NOT_STARTED = 'not_started',
@@ -15,6 +16,7 @@ export interface StepCacheInfo {
     status: CacheStatus;
     data?: any;
     timestamp: number;
+    fileIds?: string[]; // 如果有文件的话，根据文件 id
 }
 
 export interface BlockCacheInfo {
@@ -28,21 +30,23 @@ export interface BlockCacheInfo {
     error?: string;
     steps: Record<string, StepCacheInfo>;
     resumeData?: any;
+    fileIds?: string[];
 }
 
-export interface WorkflowCacheState {
+export interface CacheState {
     blocks: Record<string, BlockCacheInfo>;
     lastUpdated: number;
 }
 
-export class WorkflowCacheManager {
+export class CacheManager extends EventEmitter {
     private cacheDir: string;
     private stateFile: string;
-    private state: WorkflowCacheState;
+    private state: CacheState;
     private isInitialized = false;
-    private static instance: WorkflowCacheManager | null = null;
+    private static instance: CacheManager | null = null;
 
     constructor(private context: Context<any, any>) {
+        super();
         this.cacheDir = path.join(context.pkgDir, 'workflow-cache');
         this.stateFile = path.join(this.cacheDir, 'workflow-state.json');
         this.state = {
@@ -54,15 +58,15 @@ export class WorkflowCacheManager {
     /**
      * 单例模式：整个应用只有一个缓存管理器实例
      */
-    static getInstance(context: Context<any, any>): WorkflowCacheManager {
-        if (!WorkflowCacheManager.instance) {
-            WorkflowCacheManager.instance = new WorkflowCacheManager(context);
+    static getInstance(context: Context<any, any>): CacheManager {
+        if (!CacheManager.instance) {
+            CacheManager.instance = new CacheManager(context);
         }
-        return WorkflowCacheManager.instance;
+        return CacheManager.instance;
     }
 
     static clearInstance(): void {
-        WorkflowCacheManager.instance = null;
+        CacheManager.instance = null;
     }
 
     async initialize(): Promise<void> {
@@ -161,6 +165,8 @@ export class WorkflowCacheManager {
         return { canSkip: false };
     }
 
+
+
     async startBlock(blockId: string, inputs: any, resumeData?: any): Promise<void> {
         const inputHash = this.calculateInputHash(inputs);
 
@@ -185,6 +191,31 @@ export class WorkflowCacheManager {
         this.context.reportLog(`Started block ${blockId}`, "stdout");
     }
 
+    async completeStepWithFiles(blockId: string, stepId: string, data?: any, fileIds?: string[]): Promise<void> {
+        if (!this.state.blocks[blockId]) {
+            return;
+        }
+
+        this.state.blocks[blockId].steps[stepId] = {
+            stepId,
+            status: CacheStatus.COMPLETED,
+            data,
+            timestamp: Date.now(),
+            fileIds: fileIds || []
+        };
+
+        // 将文件 ID 添加到块级别
+        if (fileIds && fileIds.length > 0) {
+            if (!this.state.blocks[blockId].fileIds) {
+                this.state.blocks[blockId].fileIds = [];
+            }
+            this.state.blocks[blockId].fileIds!.push(...fileIds);
+        }
+
+        await this.saveState();
+        this.context.reportLog(`✓ Step ${stepId} completed with ${fileIds?.length || 0} files`, "stdout");
+    }
+
     async isStepCompleted(blockId: string, stepId: string): Promise<{ completed: boolean; data?: any }> {
         const blockCache = this.state.blocks[blockId];
         if (!blockCache || !blockCache.steps[stepId]) {
@@ -201,19 +232,7 @@ export class WorkflowCacheManager {
     }
 
     async completeStep(blockId: string, stepId: string, data?: any): Promise<void> {
-        if (!this.state.blocks[blockId]) {
-            return;
-        }
-
-        this.state.blocks[blockId].steps[stepId] = {
-            stepId,
-            status: CacheStatus.COMPLETED,
-            data,
-            timestamp: Date.now()
-        };
-
-        await this.saveState();
-        this.context.reportLog(`✓ Step ${stepId} completed`, "stdout");
+        await this.completeStepWithFiles(blockId, stepId, data);
     }
 
     async failStep(blockId: string, stepId: string, error: string): Promise<void> {
@@ -254,8 +273,26 @@ export class WorkflowCacheManager {
             this.state.blocks[blockId].error = undefined;
             this.state.blocks[blockId].resumeData = undefined;
 
+            // 自动收集所有步骤中的文件ID
+            const allFileIds = new Set<string>();
+
+            // 添加现有的块级别文件ID
+            if (this.state.blocks[blockId].fileIds) {
+                this.state.blocks[blockId].fileIds.forEach(id => allFileIds.add(id));
+            }
+
+            // 添加所有步骤中的文件ID
+            Object.values(this.state.blocks[blockId].steps).forEach(step => {
+                if (step.fileIds) {
+                    step.fileIds.forEach(id => allFileIds.add(id));
+                }
+            });
+
+            // 更新块的文件ID列表（去重）
+            this.state.blocks[blockId].fileIds = Array.from(allFileIds);
+
             await this.saveState();
-            this.context.reportLog(`✓ Block ${blockId} completed successfully`, "stdout");
+            this.context.reportLog(`✓ Block ${blockId} completed with ${allFileIds.size} total files`, "stdout");
         }
     }
 
@@ -271,49 +308,68 @@ export class WorkflowCacheManager {
     }
 
     private async invalidateBlock(blockId: string): Promise<void> {
-        if (this.state.blocks[blockId]) {
-            delete this.state.blocks[blockId];
-            await this.saveState();
-            this.context.reportLog(`Invalidated cache for block ${blockId}`, "stdout");
+        const blockCache = this.state.blocks[blockId];
+        if (!blockCache) {
+            return;
         }
-    }
 
-    /**
-     * 获取整个工作流的状态概览
-     */
-    getWorkflowStatus(): {
-        totalBlocks: number;
-        completedBlocks: number;
-        failedBlocks: number;
-        inProgressBlocks: number;
-        overallProgress: number;
-    } {
-        const blocks = Object.values(this.state.blocks);
-        const totalBlocks = blocks.length;
-        const completedBlocks = blocks.filter(b => b.status === CacheStatus.COMPLETED).length;
-        const failedBlocks = blocks.filter(b => b.status === CacheStatus.FAILED).length;
-        const inProgressBlocks = blocks.filter(b => b.status === CacheStatus.IN_PROGRESS).length;
+        // 收集所有相关文件ID
+        const allFileIds = new Set<string>();
 
-        const overallProgress = totalBlocks > 0
-            ? Math.round(blocks.reduce((sum, block) => sum + block.progress, 0) / totalBlocks)
-            : 0;
+        // 块级别的文件
+        if (blockCache.fileIds) {
+            blockCache.fileIds.forEach(id => allFileIds.add(id));
+        }
 
-        return {
-            totalBlocks,
-            completedBlocks,
-            failedBlocks,
-            inProgressBlocks,
-            overallProgress
-        };
+        // 步骤级别的文件
+        Object.values(blockCache.steps).forEach(step => {
+            if (step.fileIds) {
+                step.fileIds.forEach(id => allFileIds.add(id));
+            }
+        });
+
+        // 清理文件
+        if (allFileIds.size > 0) {
+            this.context.reportLog(`Cleaning up ${allFileIds.size} files for block ${blockId}`, "stdout");
+            this.emit('cache:block:invalidated', { blockId, fileIds: Array.from(allFileIds) });
+        }
+
+        // 清理缓存
+        delete this.state.blocks[blockId];
+        await this.saveState();
+
+        this.context.reportLog(`Invalidated cache and files for block ${blockId}`, "stdout");
     }
 
     async clearCache(): Promise<void> {
         try {
+            // 收集所有文件ID
+            const allFileIds = new Set<string>();
+
+            Object.values(this.state.blocks).forEach(block => {
+                if (block.fileIds) {
+                    block.fileIds.forEach(id => allFileIds.add(id));
+                }
+                Object.values(block.steps).forEach(step => {
+                    if (step.fileIds) {
+                        step.fileIds.forEach(id => allFileIds.add(id));
+                    }
+                });
+            });
+
+            // 发布清理事件
+            if (allFileIds.size > 0) {
+                this.context.reportLog(`Publishing cache clear event: ${allFileIds.size} files`, "stdout");
+                this.emit('cache:cleared', { fileIds: Array.from(allFileIds) });
+            }
+
+            // 清理缓存目录
             await fs.rm(this.cacheDir, { recursive: true, force: true });
             this.state = {
                 blocks: {},
                 lastUpdated: Date.now()
             };
+
             this.context.reportLog("Cache cleared successfully", "stdout");
         } catch (error) {
             this.context.reportLog(`Failed to clear cache: ${error}`, "stderr");
@@ -349,15 +405,44 @@ export class WorkflowCacheManager {
             throw new Error(`Failed to create directory ${dir}: ${error}`);
         }
     }
+
+    /**
+     * 获取整个工作流的状态概览
+     */
+    getWorkflowStatus(): {
+        totalBlocks: number;
+        completedBlocks: number;
+        failedBlocks: number;
+        inProgressBlocks: number;
+        overallProgress: number;
+    } {
+        const blocks = Object.values(this.state.blocks);
+        const totalBlocks = blocks.length;
+        const completedBlocks = blocks.filter(b => b.status === CacheStatus.COMPLETED).length;
+        const failedBlocks = blocks.filter(b => b.status === CacheStatus.FAILED).length;
+        const inProgressBlocks = blocks.filter(b => b.status === CacheStatus.IN_PROGRESS).length;
+
+        const overallProgress = totalBlocks > 0
+            ? Math.round(blocks.reduce((sum, block) => sum + block.progress, 0) / totalBlocks)
+            : 0;
+
+        return {
+            totalBlocks,
+            completedBlocks,
+            failedBlocks,
+            inProgressBlocks,
+            overallProgress
+        };
+    }
 }
 
 export function withCache<TInputs, TOutputs>(
     blockId: string,
-    blockFunction: (params: TInputs, context: Context<TInputs, TOutputs>, cacheManager: WorkflowCacheManager, resumeData?: any) => Promise<TOutputs>
+    blockFunction: (params: TInputs, context: Context<TInputs, TOutputs>, cacheManager: CacheManager, resumeData?: any) => Promise<TOutputs>
 ) {
     return async (params: TInputs, context: Context<TInputs, TOutputs>): Promise<TOutputs> => {
         // 使用单例模式获取缓存管理器
-        const cacheManager = WorkflowCacheManager.getInstance(context);
+        const cacheManager = CacheManager.getInstance(context);
         await cacheManager.initialize();
 
         try {
@@ -382,9 +467,10 @@ export function withCache<TInputs, TOutputs>(
     };
 }
 
+// Manager 语法糖
 export class StepCache {
     constructor(
-        private cacheManager: WorkflowCacheManager,
+        private cacheManager: CacheManager,
         private blockId: string,
         private context: Context<any, any>
     ) { }
@@ -407,7 +493,37 @@ export class StepCache {
             const result = await stepFunction();
             await this.cacheManager.completeStep(this.blockId, stepId, result);
             return result;
+        } catch (error) {
+            await this.cacheManager.failStep(this.blockId, stepId, error.message || String(error));
+            throw error;
+        }
+    }
 
+    async executeStepWithFiles<T>(
+        stepId: string,
+        stepFunction: () => Promise<{ result: T, fileIds: string[] }>,
+        description?: string
+    ): Promise<T> {
+        const stepResult = await this.cacheManager.isStepCompleted(this.blockId, stepId);
+        if (stepResult.completed) {
+            return stepResult.data.result;
+        }
+
+        try {
+            if (description) {
+                this.context.reportLog(`Executing step: ${description}`, "stdout");
+            }
+
+            const { result, fileIds } = await stepFunction();
+
+            await this.cacheManager.completeStepWithFiles(
+                this.blockId,
+                stepId,
+                { result, fileIds },
+                fileIds
+            );
+
+            return result;
         } catch (error) {
             await this.cacheManager.failStep(this.blockId, stepId, error.message || String(error));
             throw error;

@@ -31,6 +31,8 @@ inputs_def:
   - handle: outputDir
     json_schema:
       {}
+    value:
+    nullable: true
   - handle: texts
     description: Output
     json_schema:
@@ -59,3 +61,4 @@ executor:
     spawn: false
 title: Generate Audio With AI
 icon: ":fa6-solid:file-audio:"
+description: 使用 AI 生成语音

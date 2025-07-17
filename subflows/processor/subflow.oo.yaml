@@ -18,7 +18,7 @@ nodes:
             output_handle: subtitleAssets
       - handle: audioAssets
         from_node:
-          - node_id: +typescript#10
+          - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
       - handle: imageAssets
         from_node:
@@ -145,7 +145,7 @@ nodes:
         value:
           - {}
         from_node:
-          - node_id: +typescript#10
+          - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
   - node_id: LLM#2
     title: "splitSentence"
@@ -241,7 +241,7 @@ nodes:
             output_handle: output
       - handle: audioAssets
         from_node:
-          - node_id: +typescript#10
+          - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
   - node_id: +typescript#5
     title: "parseToImage"
@@ -451,44 +451,6 @@ nodes:
         from_node:
           - node_id: +typescript#7
             output_handle: audioAssets
-  - node_id: +typescript#10
-    title: audioExtender
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: audioAssets
-        from_node:
-          - node_id: generate-audio-with-ai#1
-            output_handle: audioAssets
-      - handle: targetDuration
-        value: 10
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: audioAssets
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-          nullable: false
-          description: Output
-        - handle: targetDuration
-          json_schema:
-            type: number
-      outputs_def:
-        - handle: audioAssets
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#10.ts
-          spawn: false
   - node_id: generate-images-with-ai#1
     task: self::generate-images-with-ai
     inputs_from:
@@ -512,8 +474,12 @@ nodes:
     task: self::generate-audio-with-ai
     inputs_from:
       - handle: outputDir
+        value:
+        schema_overrides:
+          - schema:
+              type: "null"
         from_flow:
-          - input_handle: outputDir
+          []
         from_node:
           []
       - handle: texts
@@ -539,6 +505,7 @@ nodes:
           - input_handle: outputDir
         from_node:
           []
+    ignore: false
 inputs_def:
   - handle: scenes
     description: Output

@@ -1,7 +1,7 @@
 import type { Context } from "@oomol/types/oocana";
 import { VideoGeneratorInputs, VideoGeneratorOutputs, Segment } from "~/utils/VideoGenerator";
-import { withCache, WorkflowCacheManager } from "~/utils/Cache";
-import { CachedVideoGenerator } from "~/cache/CacheVideoGenerator";
+import { withCache } from "~/cache/CacheManager";
+import { createCachedVideoGenerator } from "~/cache/video";
 
 const BLOCK_ID = "generate-video-with-ai";
 
@@ -10,7 +10,6 @@ const generateVideoWithCache = withCache(
     async (
         params: VideoGeneratorInputs,
         context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
-        cacheManager: WorkflowCacheManager,
         resumeData?: any
     ): Promise<VideoGeneratorOutputs> => {
         const { imageAssets, audioAssets, subtitleAssets } = params;
@@ -27,8 +26,13 @@ const generateVideoWithCache = withCache(
             segments.push(segment);
         }
 
-        const cachedGenerator = new CachedVideoGenerator(context, cacheManager, BLOCK_ID);
-        return await cachedGenerator.generateVideo(params, segments, resumeData);
+        const { generator, cleanup } = await createCachedVideoGenerator(context, BLOCK_ID);
+        
+        try {
+            return await generator.generateVideo(params, segments, resumeData);
+        } finally {
+            // await cleanup();
+        }
     }
 );
 

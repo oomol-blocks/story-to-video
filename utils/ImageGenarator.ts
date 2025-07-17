@@ -8,6 +8,7 @@ export interface ImageAsset extends MediaAsset {
     height: number;
     prompt: string;
     style: string;
+    url: string;
 }
 
 export interface ImageGeneratorInputs {
@@ -17,7 +18,7 @@ export interface ImageGeneratorInputs {
         style?: string;
     }>;
     config: ImageConfig;
-    outputDir: string;
+    outputDir?: string;
 }
 
 export interface ImageGeneratorOutputs {
@@ -55,18 +56,18 @@ export class ImageGenerator {
     async generateSingleImage(
         prompt: { id: string; content: string; style?: string; },
         config: ImageConfig,
-        outputDir: string
+        outputPath: string
     ): Promise<ImageAsset> {
-        const filePath = `${outputDir}/image_${prompt.id}.${config.format}`;
         const imageUrl = await this.callImageAPI(prompt.content, config);
         // TODO: 模型返回的 format 和目标 config 可能不一致
-        await this.downloadImage(imageUrl, filePath);
+        await this.downloadImage(imageUrl, outputPath);
 
-        const imageInfo = await this.getImageInfo(filePath);
+        const imageInfo = await this.getImageInfo(outputPath);
 
         return {
             id: prompt.id,
-            filePath: imageUrl,
+            url: imageUrl,
+            filePath: outputPath,
             width: imageInfo.width,
             height: imageInfo.height,
             prompt: prompt.content,

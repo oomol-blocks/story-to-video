@@ -1,5 +1,6 @@
 import { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises";
+import path from "node:path";
 
 import { AudioConfig, MediaAsset, TimingInfo } from "./constants";
 import { FFmpegExecutor } from "./FFmpegExcutor";
@@ -17,7 +18,7 @@ export interface AudioGeneratorInputs {
         content: string;
     }>;
     config: AudioConfig;
-    outputDir: string;
+    outputDir?: string;
 }
 
 export interface AudioGeneratorOutputs {
@@ -32,25 +33,22 @@ export class AudioGenerator extends FFmpegExecutor {
         super();
     }
 
-    async generateSingleAudio(
+    async generateSingleAudioToPath(
         text: { id: string; content: string; },
         config: AudioConfig,
-        outputDir: string,
+        outputPath: string,
         startTime: number
     ): Promise<AudioAsset> {
         this.context.reportLog(`Generating audio for text: ${text.content}`, "stdout");
 
         // 确保输出目录存在
-        await this.ensureDirectory(outputDir);
-
-        // 生成文件路径
-        const filePath = `${outputDir}/audio_${text.id}.${config.format}`;
+        await this.ensureDirectory(path.dirname(outputPath));
 
         // 调用API生成音频
-        await this.callAudioAPI(text.content, config, filePath);
+        await this.callAudioAPI(text.content, config, outputPath);
 
         // 获取音频信息
-        const audioInfo = await this.getAudioInfo(filePath);
+        const audioInfo = await this.getAudioInfo(outputPath);
 
         // 构建时间信息
         const timing: TimingInfo = {
@@ -61,7 +59,7 @@ export class AudioGenerator extends FFmpegExecutor {
 
         return {
             id: text.id,
-            filePath,
+            filePath: outputPath,
             timing,
             transcript: text.content,
             fileSize: audioInfo.fileSize,

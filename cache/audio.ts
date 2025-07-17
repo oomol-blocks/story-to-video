@@ -1,4 +1,5 @@
 import type { Context } from "@oomol/types/oocana";
+import path from "path";
 
 import { AudioGenerator, AudioGeneratorInputs, AudioGeneratorOutputs } from "~/utils/AudioGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
@@ -131,7 +132,7 @@ export class CachedAudioGenerator {
     ) {
         // 如果指定输出目录，则直接在指定目录中生成资源
         if (params.outputDir) {
-            const filePath = `${params.outputDir}/audio/${text.id}.${params.config.format}`;
+            const filePath = path.join(params.outputDir, 'audio', `${text.id}.${params.config.format}`);
 
             return await this.stepCache.executeStep(
                 `audio-${text.id}`,

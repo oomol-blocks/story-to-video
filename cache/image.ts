@@ -1,4 +1,6 @@
 import type { Context } from "@oomol/types/oocana";
+import path from "path";
+
 import { ImageGenerator, ImageGeneratorInputs, ImageGeneratorOutputs } from "~/utils/ImageGenarator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
 import { createdManagers, ImageFileManager } from "~/file";
@@ -124,7 +126,7 @@ export class CachedImageGenerator {
     ) {
         // 如果指定输出目录，则直接在指定目录中生成资源
         if (params.outputDir) {
-            const filePath = `${params.outputDir}/image/image_${prompt.id}.${params.config.format}`;
+            const filePath = path.join(params.outputDir, 'image', `image_${prompt.id}.${params.config.format}`);
 
             return await this.stepCache.executeStep(
                 `image-${prompt.id}`,

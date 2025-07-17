@@ -72,7 +72,7 @@ export class FileManager implements IFileManager {
     private isInitialized = false;
 
     constructor(private context: Context<any, any>, cacheManager?: CacheManager, baseDir?: string) {
-        this.tempDir = path.join(`${context.pkgDir}/${baseDir}`, 'temp');
+        this.tempDir = path.join(context.pkgDir, baseDir, 'temp');
         this.stateFile = path.join(this.tempDir, 'file-state.json');
         this.state = {
             files: {},

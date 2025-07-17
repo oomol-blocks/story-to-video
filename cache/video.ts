@@ -1,4 +1,6 @@
 import type { Context } from "@oomol/types/oocana";
+import path from "path";
+
 import { DoubaoVideoGenerator, VideoGeneratorInputs, VideoGeneratorOutputs, Segment } from "~/utils/VideoGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
 import { createdManagers, VideoFileManager } from "~/file";
@@ -140,8 +142,8 @@ export class CachedVideoGenerator {
         params: VideoGeneratorInputs
     ) {
         if (params.outputDir) {
-            const tempPath = `${params.outputDir}/video/temp_video_${segment.id}.${params.config.format}`;
-            const finalPath = `${params.outputDir}/video/video_${segment.id}.${params.config.format}`;
+            const tempPath = path.join(params.outputDir, 'video', `temp_video_${segment.id}.${params.config.format}`);
+            const finalPath = path.join(params.outputDir, 'video', `video_${segment.id}.${params.config.format}`);
 
             return await this.stepCache.executeStep(
                 `video-segment-${segment.id}`,
@@ -228,7 +230,7 @@ export class CachedVideoGenerator {
 
                 if (params.outputDir) {
                     // 直接输出到指定目录
-                    const outputPath = `${params.outputDir}/video/merged_video.${params.config.format}`;
+                    const outputPath = path.join(params.outputDir, 'video', `merged_video.${params.config.format}`);
                     return await this.generator.mergeVideoSegmentsToPath(videoAssets, params.config, outputPath);
                 } else {
                     // 使用文件管理器创建合并文件

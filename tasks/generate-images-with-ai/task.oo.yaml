@@ -59,7 +59,8 @@ inputs_def:
     json_schema:
       type: string
       ui:widget: dir
-    nullable: false
+    value:
+    nullable: true
 outputs_def:
   - handle: imageAssets
     description: Output

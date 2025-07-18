@@ -122,7 +122,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 {
                     type: "image_url",
                     image_url: {
-                        url: segment.imageAsset.filePath
+                        url: segment.imageAsset.url
                     },
                     role: "first_frame"
                 }
@@ -132,7 +132,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 content.push({
                     type: "image_url",
                     image_url: {
-                        url: segment.nextImageAsset.filePath
+                        url: segment.nextImageAsset.url
                     },
                     role: "last_frame"
                 });

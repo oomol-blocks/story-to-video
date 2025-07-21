@@ -2,7 +2,8 @@ import * as fs from "node:fs/promises";
 import * as path from "path";
 import { createHash } from "node:crypto";
 import type { Context } from "@oomol/types/oocana";
-import EventEmitter from "node:events";
+
+import { EventEmitter } from "./event";
 
 export enum CacheStatus {
     NOT_STARTED = 'not_started',

@@ -13,7 +13,7 @@ const generateImagesWithCache = withCache(
         resumeData?: any
     ): Promise<ImageGeneratorOutputs> => {
         const { generator, cleanup } = await createCachedImageGenerator(context, BLOCK_ID);
-        
+
         try {
             return await generator.generateImages(params, resumeData);
         } finally {

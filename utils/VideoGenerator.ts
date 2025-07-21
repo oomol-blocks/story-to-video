@@ -7,7 +7,6 @@ import { SubtitleAsset } from "./SubtitleGenerator";
 import { AudioAsset } from "./AudioGenerator";
 import { ImageAsset } from "./ImageGenarator";
 import { MediaAsset, VideoConfig } from "./constants";
-import { FileType, IFileManager, ManagedFile } from "../file/FileManager";
 
 export interface VideoAsset extends MediaAsset {
     duration: number;
@@ -111,7 +110,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
 
     private async callVideoAPI(segment: Segment): Promise<string> {
         try {
-            console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
+            // console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
             const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${Math.ceil(segment.audioAsset.timing.duration)}`;
 
             const content = [

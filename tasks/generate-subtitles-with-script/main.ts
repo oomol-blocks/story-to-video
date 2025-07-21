@@ -13,7 +13,7 @@ export default async function generateSubtitles(
         encoding: "utf8",
         format: "ass"
     } as SubtitleConfig;
-    
+
     const generator = new SubtitleGenerator(context);
     return await generator.generateSubtitles(params, config);
 }

@@ -1,6 +1,5 @@
 import type { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises"
-import path from 'path';
 
 import { MediaAsset, SubtitleConfig, TimingInfo } from "./constants";
 
@@ -27,7 +26,7 @@ export interface SubtitleGeneratorOutputs {
 
 export class SubtitleGenerator {
     private readonly maxLineLength = 12; // 每行的最大字符数
-    
+
     constructor(private context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>) { }
 
     async generateSubtitles(
@@ -140,7 +139,7 @@ ${formattedText.replace(/\\N/g, '\n')}
 
     private generateASS(text: { content: string; sentences?: string[]; timing: TimingInfo }): string {
         const assHeader = this.generateAssHeader();
-        
+
         // 如果有 sentences，按句子分段；否则使用整体内容
         let assEvents: string;
         if (text.sentences && text.sentences.length > 0) {

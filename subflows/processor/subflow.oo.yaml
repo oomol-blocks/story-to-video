@@ -124,11 +124,6 @@ nodes:
             items:
               type: object
               additionalProperties: false
-              properties:
-                id:
-                  type: string
-                transcript:
-                  type: string
           nullable: false
           description: Output
       outputs_def:
@@ -142,8 +137,6 @@ nodes:
           entry: scriptlets/+scriptlet#5.ts
     inputs_from:
       - handle: audioAssets
-        value:
-          - {}
         from_node:
           - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
@@ -191,23 +184,6 @@ nodes:
       ui:
         default_width: 450
       inputs_def:
-        - handle: audioAssets
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-              properties:
-                sceneId:
-                  type: number
-                filePath:
-                  type: string
-                duration:
-                  type: number
-                transcript:
-                  type: string
-          nullable: false
-          description: Output
         - handle: transcriptString
           json_schema:
             type: string
@@ -219,15 +195,6 @@ nodes:
             items:
               type: object
               additionalProperties: false
-              properties:
-                sceneId:
-                  type: number
-                filePath:
-                  type: string
-                duration:
-                  type: number
-                transcript:
-                  type: string
           nullable: false
           description: Output
       executor:
@@ -239,10 +206,6 @@ nodes:
         from_node:
           - node_id: LLM#2
             output_handle: output
-      - handle: audioAssets
-        from_node:
-          - node_id: generate-audio-with-ai#1
-            output_handle: audioAssets
   - node_id: +typescript#5
     title: "parseToImage"
     icon: ":skill-icons:typescript:"
@@ -415,15 +378,6 @@ nodes:
             items:
               type: object
               additionalProperties: false
-              properties:
-                sceneId:
-                  type: number
-                filePath:
-                  type: string
-                duration:
-                  type: number
-                transcript:
-                  type: string
           nullable: false
           description: Output
       outputs_def:
@@ -466,9 +420,9 @@ nodes:
         from_flow:
           - input_handle: imageConfig
       - handle: outputDir
-        value: /oomol-driver/oomol-storage/output2
+        value:
         from_flow:
-          - input_handle: outputDir
+          []
     ignore: false
   - node_id: generate-audio-with-ai#1
     task: self::generate-audio-with-ai
@@ -489,6 +443,7 @@ nodes:
       - handle: config
         from_flow:
           - input_handle: audioConfig
+    ignore: false
   - node_id: generate-subtitles-with-script#1
     task: self::generate-subtitles-with-script
     inputs_from:

@@ -13,7 +13,7 @@ const generateAudioWithCache = withCache(
         resumeData?: any
     ): Promise<AudioGeneratorOutputs> => {
         const { generator, cleanup } = await createCachedAudioGenerator(context, BLOCK_ID);
-        
+
         try {
             return await generator.generateAudio(params, resumeData);
         } finally {

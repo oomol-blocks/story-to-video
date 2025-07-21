@@ -1,6 +1,6 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: { sceneId: number; filePath: string; duration: number; transcript: string }[];
+    audioAssets: Record<string, any>[];
 };
 type Outputs = {
     texts: { id: string; content: string; timing: string }[] | null;

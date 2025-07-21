@@ -27,7 +27,7 @@ const generateVideoWithCache = withCache(
         }
 
         const { generator, cleanup } = await createCachedVideoGenerator(context, BLOCK_ID);
-        
+
         try {
             return await generator.generateVideo(params, segments, resumeData);
         } finally {

@@ -1,6 +1,6 @@
 //#region generated meta
 type Inputs = {
-    audioAssets: { id: string; transcript: string }[];
+    audioAssets: Record<string, any>[];
 };
 type Outputs = {
     scriptList: any[] | null;
@@ -16,9 +16,9 @@ export default async function (
 
     return {
         scriptList: params.audioAssets.map(i => ({
-                transcript: i.transcript,
-                id: i.id
-            })
+            transcript: i.transcript,
+            id: i.id
+        })
         )
     }
 };

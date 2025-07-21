@@ -11,4 +11,4 @@ name: story-to-video
 description: AI 视频生成工具
 displayName: story-to-video
 repository: https://github.com/oomol-blocks/story-to-video
-releaseNotes: disable template pkg
+releaseNotes: support cache

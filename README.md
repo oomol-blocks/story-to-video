@@ -3,30 +3,64 @@
   <p>中文 | <a href="./README-en.md">English</a></p>
 </div>
 
-一个基于 OOMOL Blocks 构建的多个 AI 服务的自动化视频生成工具，可以从文本脚本自动生成包含图像、音频、字幕的完整视频。
+一个基于 OOMOL Blocks 构建的智能视频生成工具，集成多个 AI 服务，可以从文本脚本自动生成包含图像、音频、字幕的完整视频。支持缓存机制和断点续传，确保生成过程稳定可靠。
 
 ## ✨ 特性
 
 - 🎬 **脚本解析**: 自动解析结构化文本脚本，提取场景信息
-- 🖼️ **AI 图像生成**: 基于视觉提示自动生成场景图像
-- 🎵 **AI 语音合成**: 将解说词转换为高质量语音
-- 📝 **智能字幕**: 自动生成多格式字幕文件（SRT/ASS/VTT）
-- 🎥 **视频合成**: 使用豆包 AI 将图像转换为视频，并合成音频字幕
-- ⚡ **批量处理**: 支持多场景批量生成和合并
-- 🔧 **精确时长控制**: 音频扩展到指定时长，确保视频同步
+- 🖼️ **AI 图像生成**: OOMOL AI 自动生成场景图像
+- 🎵 **AI 语音合成**: TTS 服务自动将解说词转换为高质量语音
+- 📝 **智能字幕**: 自动生成字幕
+- 🎥 **视频段生成**: 豆包 AI 将图像转换为视频
+- ⚡ **缓存机制**: 内置缓存系统，支持断点续传
+- 📁 **文件管理**: 临时文件管理和自动清理
+
+## 🏗️ 系统架构
+
+### 核心架构图
+
+```
+文本脚本 → 脚本解析 → 图像生成 → 音频生成 → 字幕生成 → 视频生成 → 视频合并
+                      ↓        ↓                  ↓
+                           缓存系统 ← → 文件管理
+```
+
+### 核心逻辑结构
+
+```
+utils/
+├── ScriptParser.ts      # 脚本解析器
+├── ImageGenerator.ts    # 图像生成器
+├── AudioGenerator.ts    # 音频生成器
+├── SubtitleGenerator.ts # 字幕生成器
+├── VideoGenerator.ts    # 视频生成器
+├── FFmpegExecutor.ts    # FFmpeg 基础类
+└── constants.ts         # 类型定义和常量
+
+cache/
+├── CacheManager         # 基于文件的缓存管理中心
+├── image                # 图片缓存逻辑，业务层缓存逻辑
+├── audio                # 音频缓存逻辑，业务层缓存逻辑
+└── video                # 视频缓存逻辑，业务层缓存逻辑
+
+file/
+├── FileManager          # 临时文件管理中心
+└── index                # 临时文件的业务层应用
+```
 
 ## 🚀 快速开始
 
 ### 安装
 
-1. 社区搜索 `story-to-book`
-2. 安装插件
+1. [官网](https://oomol.com/zh-CN/downloads/)下载 OOMOL
+2. `社区` 模块搜索 `story-to-book`
 3. `Use` 该插件
-4. 在 converter flow 中输入文档
+4. 在 `converter` 工作流中完成参数的填写
+5. 运行等待结果
 
 ### 配置 API 密钥
 
-创建配置文件或环境变量：
+在使用前需要配置一下 API 服务：
 
 ```typescript
 const config = {
@@ -55,52 +89,22 @@ const config = {
 };
 ```
 
-**OOMOL AI**
+### API 服务申请
 
-* `imageConfig` `API_KEY` [生成地址](https://console.oomol.com/panel/api-key)
+#### OOMOL AI（图片生成）
 
-**豆包 AI**
+* `imageConfig.apiKey`: [API Key 生成地址](https://console.oomol.com/panel/api-key)
+* 模型：Doubao-Seedream-3.0-T2I
 
-* `API_KEY` [生成地址](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
-* `videoConfig` 开通图生视频大模型：[Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
+#### 豆包 AI（视频生成）
 
-**ohMyGPT**
+* `videoConfig.apiKey`: [API Key 生成地址](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
+* 开通模型：[Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
 
-* `audioConfig` 的 `API_KEY` [生成地址](https://www.ohmygpt.com/apis/keys)
+#### ohMyGPT-TTS 服务（语音合成）
 
+* `audioConfig.apiKey`: [API Key 生成地址](https://www.ohmygpt.com/apis/keys)
 
-## 📁 项目结构
-
-```
-src/
-├── ScriptParser.ts      # 脚本解析器
-├── ImageGenerator.ts    # 图像生成器
-├── AudioGenerator.ts    # 音频生成器
-├── AudioExtender.ts     # 音频扩展器
-├── SubtitleGenerator.ts # 字幕生成器
-├── VideoGenerator.ts    # 视频生成器
-├── FFmpegExecutor.ts    # FFmpeg 基础类
-└── constants.ts         # 类型定义和常量
-```
-
-### 🏗️ 架构设计
-
-```
-文本脚本 → 脚本解析 → 图像生成 → 音频生成 → 音频扩展 → 字幕生成 → 视频生成 → 视频合并
-```
-
-![基本逻辑](./image.png)
-
-### 核心模块
-
-| 模块 | 功能 | 输入 | 输出 |
-|------|------|------|------|
-| `ScriptParser` | 解析脚本文件 | 结构化文本 | 场景数据 |
-| `ImageGenerator` | 生成场景图像 | 视觉提示 | 图像文件 |
-| `AudioGenerator` | 生成语音 | 解说词文本 | 音频文件 |
-| `AudioExtender` | 扩展音频时长 | 音频文件 | 标准时长音频 |
-| `SubtitleGenerator` | 生成字幕 | 文本内容 | 字幕文件 |
-| `VideoGenerator` | 生成最终视频 | 所有资源 | 完整视频 |
 
 ## 🆘 支持
 

@@ -3,105 +3,113 @@
   <p><a href="./README.md">中文</a> | English</p>
 </div>
 
-An automated video generation tool built on OOMOL Blocks that integrates multiple AI services to automatically create complete videos with images, audio, and subtitles from text scripts.
+An intelligent video generation tool built on OOMOL Blocks, integrating multiple AI services to automatically generate complete videos with images, audio, and subtitles from text scripts. Supports caching mechanisms and resume functionality to ensure stable and reliable generation process.
 
 ## ✨ Features
 
 - 🎬 **Script Parsing**: Automatically parse structured text scripts and extract scene information
-- 🖼️ **AI Image Generation**: Automatically generate scene images based on visual prompts
-- 🎵 **AI Speech Synthesis**: Convert narration text into high-quality speech
-- 📝 **Intelligent Subtitles**: Automatically generate multi-format subtitle files (SRT/ASS/VTT)
-- 🎥 **Video Composition**: Use Doubao AI to convert images to video and composite with audio and subtitles
-- ⚡ **Batch Processing**: Support batch generation and merging of multiple scenes
-- 🔧 **Precise Duration Control**: Extend audio to specified duration to ensure video synchronization
+- 🖼️ **AI Image Generation**: OOMOL AI automatically generates scene images
+- 🎵 **AI Speech Synthesis**: TTS service automatically converts narration to high-quality speech
+- 📝 **Intelligent Subtitles**: Automatically generate subtitles
+- 🎥 **Video Segment Generation**: Doubao AI converts images to videos
+- ⚡ **Caching Mechanism**: Built-in caching system with resume functionality
+- 📁 **File Management**: Temporary file management and automatic cleanup
+
+## 🏗️ System Architecture
+
+### Core Architecture Diagram
+
+```
+Text Script → Script Parsing → Image Generation → Audio Generation → Subtitle Generation → Video Generation → Video Merging
+                      ↓        ↓                  ↓
+                           Cache System ← → File Management
+```
+
+### Core Logic Structure
+
+```
+utils/
+├── ScriptParser.ts      # Script parser
+├── ImageGenerator.ts    # Image generator
+├── AudioGenerator.ts    # Audio generator
+├── SubtitleGenerator.ts # Subtitle generator
+├── VideoGenerator.ts    # Video generator
+├── FFmpegExecutor.ts    # FFmpeg base class
+└── constants.ts         # Type definitions and constants
+
+cache/
+├── CacheManager         # File-based cache management center
+├── image                # Image cache logic, business layer cache logic
+├── audio                # Audio cache logic, business layer cache logic
+└── video                # Video cache logic, business layer cache logic
+
+file/
+├── FileManager          # Temporary file management center
+└── index                # Business layer application of temporary files
+```
 
 ## 🚀 Quick Start
 
 ### Installation
 
-1. Search for `story-to-book` in the community
-2. Install the plugin
+1. Download OOMOL from [official website](https://oomol.com/zh-CN/downloads/)
+2. Search for `story-to-book` in the `Community` module
 3. `Use` the plugin
-4. Input documents in the converter flow
+4. Complete parameter configuration in the `converter` workflow
+5. Run and wait for results
 
 ### Configure API Keys
 
-Create configuration files or environment variables:
-
-**Doubao AI**
-
-* `API_KEY` [Generation URL](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
-* Enable text-to-image model: [Doubao-Seedream-3.0-t2i](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-* Enable image-to-video model: [Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-
-**ohMyGPT**
-
-* `API_KEY` [Generation URL](https://www.ohmygpt.com/settings)
+You need to configure the following API services before use:
 
 ```typescript
 const config = {
-  // Image generation API
+  // Image generation API (OOMOL)
   imageConfig: {
-    apiKey: "your-doubao-api-key",
-    apiEndpoint: "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+    apiKey: "your-oomol-api-key",
+    apiEndpoint: "https://console.oomol.com/v1/images/generations",
     model: "doubao-seedream-3-0-t2i-250415",
     size: "720x1280"
   },
+    
+  // Video generation API (Doubao, Doubao-Seedance-1.0-lite-i2v model)
+  videoConfig: {
+    apiKey: "your-doubao-api-key",
+    size: "1280x720",
+    format: "mp4"
+  },
   
-  // Speech synthesis API. Currently using ohMyGPT tts-1 model.
+  // Speech synthesis API. Currently using ohMyGPT tts-1 model
   audioConfig: {
     apiKey: "your-tts-api-key",
     apiEndpoint: "https://cn2us02.opapi.win/v1/audio/speech",
     model: "tts-1",
     voice: "alloy"
-  },
-  
-  // Video generation API (Doubao)
-  videoConfig: {
-    apiKey: "your-doubao-api-key",
-    size: "1280x720",
-    format: "mp4"
   }
 };
 ```
 
-## 📁 Project Structure
+### API Service Application
 
-```
-src/
-├── ScriptParser.ts      # Script parser
-├── ImageGenerator.ts    # Image generator
-├── AudioGenerator.ts    # Audio generator
-├── AudioExtender.ts     # Audio extender
-├── SubtitleGenerator.ts # Subtitle generator
-├── VideoGenerator.ts    # Video generator
-├── FFmpegExecutor.ts    # FFmpeg base class
-└── constants.ts         # Type definitions and constants
-```
+#### OOMOL AI (Image Generation)
 
-### 🏗️ Architecture Design
+* `imageConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
+* Model: Doubao-Seedream-3.0-T2I
 
-```
-Text Script → Script Parsing → Image Generation → Audio Generation → Audio Extension → Subtitle Generation → Video Generation → Video Merging
-```
+#### Doubao AI (Video Generation)
 
-![Basic Logic](./image.png)
+* `videoConfig.apiKey`: [API Key Generation URL](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
+* Enable Model: [Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
 
-### Core Modules
+#### ohMyGPT-TTS Service (Speech Synthesis)
 
-| Module | Function | Input | Output |
-|--------|----------|-------|--------|
-| `ScriptParser` | Parse script files | Structured text | Scene data |
-| `ImageGenerator` | Generate scene images | Visual prompts | Image files |
-| `AudioGenerator` | Generate speech | Narration text | Audio files |
-| `AudioExtender` | Extend audio duration | Audio files | Standardized duration audio |
-| `SubtitleGenerator` | Generate subtitles | Text content | Subtitle files |
-| `VideoGenerator` | Generate final video | All resources | Complete video |
+* `audioConfig.apiKey`: [API Key Generation URL](https://www.ohmygpt.com/apis/keys)
+
 
 ## 🆘 Support
 
 If you encounter problems or need help:
 
 - 📧 Email: honeysyt@gmail.com
-- 🐛 Issue Reports: [GitHub Issues](https://github.com/oomol-blocks/story-to-video/issues)
+- 🐛 Issue Feedback: [GitHub Issues](https://github.com/oomol-blocks/story-to-video/issues)
 - 📖 WeChat Group Support: [WeChat Group Support](https://oomol.com/img/qrcode@3x.png)

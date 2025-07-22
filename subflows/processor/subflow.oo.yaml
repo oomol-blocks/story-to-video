@@ -184,6 +184,14 @@ nodes:
       ui:
         default_width: 450
       inputs_def:
+        - handle: audioAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+          nullable: false
+          description: Output
         - handle: transcriptString
           json_schema:
             type: string
@@ -206,6 +214,10 @@ nodes:
         from_node:
           - node_id: LLM#2
             output_handle: output
+      - handle: audioAssets
+        from_node:
+          - node_id: generate-audio-with-ai#1
+            output_handle: audioAssets
   - node_id: +typescript#5
     title: "parseToImage"
     icon: ":skill-icons:typescript:"
@@ -576,15 +588,27 @@ inputs_def:
         apiEndpoint:
           enum:
             - https://cn2us02.opapi.win/v1/audio/speech
+            - https://console.oomol.com/v1/audio/speech
           ui:options:
             labels:
               - GPT_AUDIO_BASE_URL
+              - OOMOL_FUN_AUDIO_LLM
         model:
           enum:
             - tts-1
+            - FunAudioLLM/CosyVoice2-0.5B
           ui:options:
             labels:
               - GPT_TTS_1
+              - OOMOL_FUN_AUDIO_LLM
+        voice:
+          enum:
+            - FunAudioLLM/CosyVoice2-0.5B:alex
+            - alloy
+          ui:options:
+            labels:
+              - OOMOL_FUN_AUDIO_ALEX
+              - GPT_ALLOY
         apiKey:
           contentMediaType: oomol/secret
           type: string

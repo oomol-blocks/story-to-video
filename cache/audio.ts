@@ -203,19 +203,8 @@ export class CachedAudioGenerator {
     }
 
     private buildResult(state: any): AudioGeneratorOutputs {
-        const totalDuration = state.audioAssets.reduce(
-            (sum: number, asset: any) => sum + asset.timing.duration,
-            0
-        );
-
-        this.context.reportLog(
-            `Audio generation completed. Total duration: ${totalDuration.toFixed(2)}s`,
-            "stdout"
-        );
-
         return {
-            audioAssets: state.audioAssets,
-            totalDuration
+            audioAssets: state.audioAssets
         };
     }
 

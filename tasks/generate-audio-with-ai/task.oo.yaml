@@ -9,15 +9,27 @@ inputs_def:
         apiEndpoint:
           enum:
             - https://cn2us02.opapi.win/v1/audio/speech
+            - https://console.oomol.com/v1/audio/speech
           ui:options:
             labels:
               - GPT_AUDIO_BASE_URL
+              - OOMOL_FUN_AUDIO_LLM
         model:
           enum:
             - tts-1
+            - FunAudioLLM/CosyVoice2-0.5B
           ui:options:
             labels:
               - GPT_TTS_1
+              - OOMOL_FUN_AUDIO_LLM
+        voice:
+          enum:
+            - FunAudioLLM/CosyVoice2-0.5B:alex
+            - alloy
+          ui:options:
+            labels:
+              - OOMOL_FUN_AUDIO_ALEX
+              - GPT_ALLOY
         apiKey:
           contentMediaType: oomol/secret
           type: string

@@ -26,7 +26,7 @@ export interface AudioConfig {
     speed: number;
     format: 'mp3' | 'wav' | 'aac';
     sampleRate: number;
-    bitRate: number;
+    // bitRate: number;
 }
 
 export interface ImageConfig {

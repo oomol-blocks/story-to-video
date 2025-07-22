@@ -23,7 +23,6 @@ export interface AudioGeneratorInputs {
 
 export interface AudioGeneratorOutputs {
     audioAssets: AudioAsset[];
-    totalDuration: number;
 }
 
 export class AudioGenerator extends FFmpegExecutor {

@@ -1,5 +1,6 @@
 //#region generated meta
 type Inputs = {
+    audioAssets: Record<string, any>[];
     transcriptString: string;
 };
 type Outputs = {

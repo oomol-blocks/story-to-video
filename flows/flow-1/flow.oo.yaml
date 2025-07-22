@@ -101,15 +101,27 @@ nodes:
             apiEndpoint:
               enum:
                 - https://cn2us02.opapi.win/v1/audio/speech
+                - https://console.oomol.com/v1/audio/speech
               ui:options:
                 labels:
                   - GPT_AUDIO_BASE_URL
+                  - OOMOL_FUN_AUDIO_LLM
             model:
               enum:
                 - tts-1
+                - FunAudioLLM/CosyVoice2-0.5B
               ui:options:
                 labels:
                   - GPT_TTS_1
+                  - OOMOL_FUN_AUDIO_LLM
+            voice:
+              enum:
+                - FunAudioLLM/CosyVoice2-0.5B:alex
+                - alloy
+              ui:options:
+                labels:
+                  - OOMOL_FUN_AUDIO_ALEX
+                  - GPT_ALLOY
             apiKey:
               contentMediaType: oomol/secret
               type: string
@@ -120,9 +132,10 @@ nodes:
                 labels:
                   - MP3
         value:
-          apiEndpoint: https://cn2us02.opapi.win/v1/audio/speech
-          model: tts-1
-          apiKey: ${{OO_SECRET:Custom,OhMyGPT,text2audio_text2image}}
+          apiEndpoint: https://console.oomol.com/v1/audio/speech
+          model: FunAudioLLM/CosyVoice2-0.5B
+          voice: FunAudioLLM/CosyVoice2-0.5B:alex
+          apiKey: ${{OO_SECRET:Custom,image_generator,image_generator}}
           format: mp3
       - handle: outputDir
         json_schema:

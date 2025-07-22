@@ -4,8 +4,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 4816.030500683901,
-          "y": 107.47995242155741
+          "x": 4714.618283350017,
+          "y": -278.0352419830413
         }
       },
       "sections": {
@@ -41,8 +41,8 @@
       "contentWidth": 628.1942527632791,
       "rfNode": {
         "position": {
-          "x": 1175.0293754031302,
-          "y": 1073.4774821559627
+          "x": 994.663010232101,
+          "y": 1410.0494653162996
         }
       },
       "sections": {
@@ -54,8 +54,8 @@
     "LLM#2": {
       "rfNode": {
         "position": {
-          "x": 1958.1451858619494,
-          "y": 1029.897949452676
+          "x": 2289.0405801538195,
+          "y": 1328.3840279805172
         }
       },
       "sections": {
@@ -68,8 +68,8 @@
       "contentWidth": 651.5604063122798,
       "rfNode": {
         "position": {
-          "x": 2519.2409097526515,
-          "y": 1054.7362145294255
+          "x": 2859.599604000179,
+          "y": 1138.7208273956985
         }
       },
       "sections": {
@@ -117,8 +117,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 3305.087149161498,
-          "y": 899.99931142629
+          "x": 3645.4458434090257,
+          "y": 983.983924292563
         }
       },
       "sections": {
@@ -149,8 +149,68 @@
       "contentWidth": 603.5295601583873,
       "rfNode": {
         "position": {
-          "x": 3893.5942141685236,
-          "y": 648.9072718071995
+          "x": 4233.952908416051,
+          "y": 732.8918846734725
+        }
+      }
+    },
+    "+typescript#1": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 5413.20698444577,
+          "y": 95.7509484191688
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "assets": {
+              "[]": true
+            },
+            "imageAssets": {
+              "[]": true
+            },
+            "config": {
+              "[]": true
+            },
+            "audioAssets": {
+              "[]": true
+            },
+            "subtitleAssets": {
+              "[]": true
+            }
+          }
+        },
+        "outputs": {
+          "collapsed": {
+            "videoAsset": {
+              "[]": true
+            },
+            "mergedVideoAsset": {
+              "[]": true
+            }
+          }
+        },
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "+typescript#2": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 3944.45350594869,
+          "y": -121.1795867846855
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
         }
       }
     }
@@ -163,13 +223,34 @@
           "x": -1469.6653855754075,
           "y": 229.68985360675833
         }
+      },
+      "sections": {
+        "subflowInput": {
+          "collapsed": {
+            "scenes": {
+              "[]": true
+            },
+            "sceneMetadata": {
+              "[]": true
+            },
+            "imageConfig": {
+              "[]": true
+            },
+            "videoConfig": {
+              "[]": true
+            },
+            "audioConfig": {
+              "[]": true
+            }
+          }
+        }
       }
     },
     "output": {
       "rfNode": {
         "position": {
-          "x": 5592.852919013722,
-          "y": 72.4299699455081
+          "x": 6177.948615783721,
+          "y": 68.94726478211616
         }
       }
     }
@@ -179,8 +260,8 @@
       "contentWidth": 350,
       "rfNode": {
         "position": {
-          "x": 1339.6022471536114,
-          "y": 1606.9570714857457
+          "x": 1391.4746627415018,
+          "y": 1817.328534703301
         }
       },
       "title": "Comment #1",

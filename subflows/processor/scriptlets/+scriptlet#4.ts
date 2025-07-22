@@ -12,17 +12,16 @@ const generateVideoWithCache = withCache(
         context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
         resumeData?: any
     ): Promise<VideoGeneratorOutputs> => {
-        const { imageAssets, audioAssets, subtitleAssets } = params;
+        const { imageAssets, durationList } = params;
         const segments: Segment[] = [];
 
         for (let i = 0; i < imageAssets.length; i++) {
             const segment = {
-                id: audioAssets[i].id,
+                id: imageAssets[i].id,
                 imageAsset: imageAssets[i],
-                audioAsset: audioAssets[i],
-                subtitleAsset: subtitleAssets[i],
-                nextImageAsset: i < imageAssets.length - 1 ? imageAssets[i + 1] : undefined
-            };
+                nextImageAsset: i < imageAssets.length - 1 ? imageAssets[i + 1] : undefined,
+                duration: durationList[i].duration
+            } as Segment;
             segments.push(segment);
         }
 

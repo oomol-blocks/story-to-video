@@ -4,8 +4,8 @@
       "contentWidth": 590.538420769109,
       "rfNode": {
         "position": {
-          "x": -523.5816676944204,
-          "y": -70.88942827162536
+          "x": -529.6645977022175,
+          "y": -12.087771529586636
         }
       },
       "sections": {
@@ -75,6 +75,9 @@
         "outputs": {
           "collapsed": {
             "videoAsset": {
+              "[]": true
+            },
+            "mergedVideoAsset": {
               "[]": true
             }
           }

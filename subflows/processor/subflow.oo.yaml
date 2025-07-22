@@ -1,25 +1,21 @@
 nodes:
   - node_id: +typescript#4
-    title: video
+    title: Generate Video With AI
     icon: ":skill-icons:typescript:"
     inputs_from:
       - handle: outputDir
-        value: /oomol-driver/oomol-storage
+        value:
         from_flow:
-          - input_handle: outputDir
+          []
         from_node:
           []
       - handle: config
         from_flow:
           - input_handle: videoConfig
-      - handle: subtitleAssets
+      - handle: durationList
         from_node:
-          - node_id: generate-subtitles-with-script#1
-            output_handle: subtitleAssets
-      - handle: audioAssets
-        from_node:
-          - node_id: generate-audio-with-ai#1
-            output_handle: audioAssets
+          - node_id: +typescript#2
+            output_handle: durationList
       - handle: imageAssets
         from_node:
           - node_id: generate-images-with-ai#1
@@ -29,17 +25,12 @@ nodes:
         default_width: 450
       inputs_def:
         - handle: imageAssets
+          description: Output
           json_schema:
             type: array
             items:
               type: object
               additionalProperties: false
-          nullable: false
-          description: Output
-        - handle: outputDir
-          json_schema:
-            type: string
-            ui:widget: dir
           nullable: false
         - handle: config
           json_schema:
@@ -78,33 +69,24 @@ nodes:
                     - 720x720（1:1 - 720p）
                     - 720x1280（9:16 - 720p）
           nullable: false
-        - handle: audioAssets
+        - handle: durationList
+          description: Output
           json_schema:
             type: array
             items:
               type: object
               additionalProperties: false
           nullable: false
+        - handle: outputDir
+          json_schema:
+            type: string
+            ui:widget: dir
+          nullable: true
+      outputs_def:
+        - handle: videoAssets
           description: Output
-        - handle: subtitleAssets
           json_schema:
             type: array
-          nullable: false
-      outputs_def:
-        - handle: mergedVideoAsset
-          description: Output
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              filePath:
-                type: string
-              duration:
-                type: number
-              resolution:
-                type: string
-              fileSize:
-                type: number
       executor:
         name: nodejs
         options:
@@ -473,6 +455,149 @@ nodes:
         from_node:
           []
     ignore: false
+  - node_id: +typescript#1
+    title: Merge Sources
+    icon: ":skill-icons:typescript:"
+    inputs_from:
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage
+        from_flow:
+          - input_handle: outputDir
+        from_node:
+          []
+      - handle: config
+        from_flow:
+          - input_handle: videoConfig
+      - handle: subtitleAssets
+        value:
+        from_node:
+          - node_id: generate-subtitles-with-script#1
+            output_handle: subtitleAssets
+      - handle: audioAssets
+        value:
+        from_node:
+          - node_id: generate-audio-with-ai#1
+            output_handle: audioAssets
+      - handle: videoAssets
+        from_node:
+          - node_id: +typescript#4
+            output_handle: videoAssets
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: videoAssets
+          json_schema:
+            type: array
+          nullable: false
+          description: Output
+        - handle: outputDir
+          json_schema:
+            type: string
+            ui:widget: dir
+          nullable: false
+        - handle: config
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              apiEndpoint:
+                enum:
+                  - https://ark.cn-beijing.volces.com/api/v3
+                ui:options:
+                  labels:
+                    - DOUBAO_VIDEO_BASE_URL
+              model:
+                enum:
+                  - doubao-seedance-1-0-lite-i2v-250428
+                ui:options:
+                  labels:
+                    - DOUBAO_SEEDANCE
+              apiKey:
+                contentMediaType: oomol/secret
+                type: string
+              format:
+                enum:
+                  - mp4
+                ui:options:
+                  labels:
+                    - MP4
+              size:
+                enum:
+                  - 1280x720
+                  - 720x720
+                  - 720x1280
+                ui:options:
+                  labels:
+                    - 1280x720（16:9 - 720p）
+                    - 720x720（1:1 - 720p）
+                    - 720x1280（9:16 - 720p）
+          nullable: false
+        - handle: audioAssets
+          description: Output
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+          nullable: true
+        - handle: subtitleAssets
+          json_schema:
+            type: array
+          nullable: true
+      outputs_def:
+        - handle: mergedVideoAsset
+          description: Output
+          json_schema:
+            type: object
+            additionalProperties: false
+            properties:
+              filePath:
+                type: string
+              duration:
+                type: number
+              resolution:
+                type: string
+              fileSize:
+                type: number
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#10.ts
+          spawn: false
+  - node_id: +typescript#2
+    title: "Generate video duration list"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: audioAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+          nullable: false
+          description: Output
+      outputs_def:
+        - handle: durationList
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+          nullable: false
+          description: Output
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#1.ts
+    inputs_from:
+      - handle: audioAssets
+        from_node:
+          - node_id: generate-audio-with-ai#1
+            output_handle: audioAssets
 inputs_def:
   - handle: scenes
     description: Output
@@ -605,10 +730,12 @@ inputs_def:
           enum:
             - FunAudioLLM/CosyVoice2-0.5B:alex
             - alloy
+            - FunAudioLLM/CosyVoice2-0.5B:anna
           ui:options:
             labels:
               - OOMOL_FUN_AUDIO_ALEX
               - GPT_ALLOY
+              - OOMOL_FUN_AUDIO_ANNA
         apiKey:
           contentMediaType: oomol/secret
           type: string
@@ -643,5 +770,5 @@ outputs_def:
 outputs_from:
   - handle: mergedVideoAsset
     from_node:
-      - node_id: +typescript#4
+      - node_id: +typescript#1
         output_handle: mergedVideoAsset

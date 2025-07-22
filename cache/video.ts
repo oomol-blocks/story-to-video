@@ -76,11 +76,8 @@ export class CachedVideoGenerator {
             // 生成剩余的视频段
             await this.generateRemainingVideoSegments(params, segments, state);
 
-            // 合并视频
-            const mergedVideoAsset = await this.mergeVideoSegmentsCached(state.videoAssets, params);
-
             // 返回结果
-            return this.buildResult(state, mergedVideoAsset);
+            return this.buildResult(state);
         } catch (error) {
             // 保存当前状态
             await this.cacheManager.updateBlockProgress(this.BLOCK_ID, (state.startIndex / segments.length) * 80, {
@@ -124,7 +121,7 @@ export class CachedVideoGenerator {
             const segment = segments[i];
 
             // 生成单个视频段
-            const videoAsset = await this.generateSingleVideoSegmentCached(segment, params);
+            const videoAsset = await this.generateVideoSegmentCached(segment, params);
 
             // 更新状态
             state.videoAssets.push(videoAsset);
@@ -137,36 +134,32 @@ export class CachedVideoGenerator {
     /**
      * 生成单个视频段
      */
-    private async generateSingleVideoSegmentCached(
+    private async generateVideoSegmentCached(
         segment: Segment,
         params: VideoGeneratorInputs
     ) {
         if (params.outputDir) {
             const tempPath = path.join(params.outputDir, 'video', `temp_video_${segment.id}.${params.config.format}`);
-            const finalPath = path.join(params.outputDir, 'video', `video_${segment.id}.${params.config.format}`);
 
             return await this.stepCache.executeStep(
                 `video-segment-${segment.id}`,
                 async () => {
-                    return {
-                        videoAsset: await this.generator.generateSingleVideoSegmentToPath(
-                            segment,
-                            params.config,
-                            tempPath,
-                            finalPath
-                        ),
-                        tempFileId: null // 直接输出到目录时不需要管理临时文件
-                    };
+                    return await this.generator.generateVideoSegment(
+                        segment,
+                        params.config,
+                        tempPath
+                    );
                 },
                 `Generate video segment ${segment.id}`
             );
         } else {
             // 如果没有 outputDir，使用文件管理器
-            return await this.generateSingleVideoSegmentWithFileManagement(segment, params);
+            const { videoAsset } = await this.generateVideoSegmentWithFile(segment, params);
+            return videoAsset;
         }
     }
 
-    private async generateSingleVideoSegmentWithFileManagement(
+    private async generateVideoSegmentWithFile(
         segment: Segment,
         params: VideoGeneratorInputs
     ) {
@@ -179,100 +172,31 @@ export class CachedVideoGenerator {
                     params.config.format
                 );
 
-                // 创建最终视频文件管理记录
-                const finalManagedFile = await this.videoFileManager.createFinalVideoFile(
-                    segment.id,
-                    params.config.format
-                );
-
                 try {
                     // 更新状态
                     await this.fileManager.updateFileStatus(tempManagedFile.id, FileStatus.PROCESSING);
-                    await this.fileManager.updateFileStatus(finalManagedFile.id, FileStatus.PROCESSING);
-
                     // 调用生成器生成视频段
-                    const videoAsset = await this.generator.generateSingleVideoSegmentToPath(
+                    const videoAsset = await this.generator.generateVideoSegment(
                         segment,
                         params.config,
-                        tempManagedFile.tempPath!,
-                        finalManagedFile.tempPath!
+                        tempManagedFile.tempPath!
                     );
 
                     // 更新文件状态
                     await this.fileManager.updateFileStatus(tempManagedFile.id, FileStatus.COMPLETED);
-                    await this.fileManager.updateFileStatus(finalManagedFile.id, FileStatus.COMPLETED);
 
                     return {
                         result: {
-                            videoAsset,
-                            tempFileId: tempManagedFile.id
+                            videoAsset
                         },
-                        fileIds: [tempManagedFile.id, finalManagedFile.id]
+                        fileIds: [tempManagedFile.id]
                     };
                 } catch (error) {
                     await this.fileManager.updateFileStatus(tempManagedFile.id, FileStatus.FAILED);
-                    await this.fileManager.updateFileStatus(finalManagedFile.id, FileStatus.FAILED);
                     throw error;
                 }
             },
             `Generate video segment ${segment.id}`
-        );
-    }
-
-    /**
-     * 合并视频段
-     */
-    private async mergeVideoSegmentsCached(videoAssets: any[], params: VideoGeneratorInputs) {
-        return await this.stepCache.executeStep(
-            'merge-videos',
-            async () => {
-                this.context.reportLog('Merging video segments...', 'stdout');
-
-                if (params.outputDir) {
-                    // 直接输出到指定目录
-                    const outputPath = path.join(params.outputDir, 'video', `merged_video.${params.config.format}`);
-                    return await this.generator.mergeVideoSegmentsToPath(videoAssets, params.config, outputPath);
-                } else {
-                    // 使用文件管理器创建合并文件
-                    return await this.mergeVideoSegmentsWithFileManagement(videoAssets, params);
-                }
-            },
-            'Merge all video segments'
-        );
-    }
-
-    private async mergeVideoSegmentsWithFileManagement(videoAssets: any[], params: VideoGeneratorInputs) {
-        return await this.stepCache.executeStepWithFiles(
-            'merge-videos-with-files',
-            async () => {
-                // 创建合并文件的管理记录
-                const mergedManagedFile = await this.videoFileManager.createFinalVideoFile(
-                    'merged',
-                    params.config.format
-                );
-
-                try {
-                    await this.fileManager.updateFileStatus(mergedManagedFile.id, FileStatus.PROCESSING);
-
-                    // 调用生成器合并视频
-                    const mergedAsset = await this.generator.mergeVideoSegmentsToPath(
-                        videoAssets,
-                        params.config,
-                        mergedManagedFile.tempPath!
-                    );
-
-                    await this.fileManager.updateFileStatus(mergedManagedFile.id, FileStatus.COMPLETED);
-
-                    return {
-                        result: mergedAsset,
-                        fileIds: [mergedManagedFile.id]
-                    };
-                } catch (error) {
-                    await this.fileManager.updateFileStatus(mergedManagedFile.id, FileStatus.FAILED);
-                    throw error;
-                }
-            },
-            'Merge videos with file management'
         );
     }
 
@@ -290,12 +214,11 @@ export class CachedVideoGenerator {
         await this.context.reportProgress(progress);
     }
 
-    private buildResult(state: any, mergedVideoAsset: any): VideoGeneratorOutputs {
+    private buildResult(state: any): VideoGeneratorOutputs {
         this.context.reportLog('✓ Video generation completed successfully', 'stdout');
 
         return {
-            videoAssets: state.videoAssets,
-            mergedVideoAsset
+            videoAssets: state.videoAssets
         };
     }
 

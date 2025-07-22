@@ -1,10 +1,7 @@
 import type { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises";
-import path from 'path';
 
 import { FFmpegExecutor } from "./FFmpegExcutor";
-import { SubtitleAsset } from "./SubtitleGenerator";
-import { AudioAsset } from "./AudioGenerator";
 import { ImageAsset } from "./ImageGenarator";
 import { MediaAsset, VideoConfig } from "./constants";
 
@@ -14,24 +11,24 @@ export interface VideoAsset extends MediaAsset {
 }
 
 export interface VideoGeneratorInputs {
-    imageAssets: ImageAsset[],
-    audioAssets: AudioAsset[],
-    subtitleAssets: SubtitleAsset[],
+    imageAssets: ImageAsset[];
+    durationList: {
+        id: string;
+        duration: number;
+    }[]; // 提供精确时长
     config: VideoConfig;
     outputDir?: string;
 }
 
 export interface Segment {
     id: string;
+    duration: number;
     imageAsset: ImageAsset;
-    audioAsset: AudioAsset;
-    subtitleAsset: SubtitleAsset;
     nextImageAsset?: ImageAsset;
 }
 
 export interface VideoGeneratorOutputs {
     videoAssets: VideoAsset[];
-    mergedVideoAsset?: VideoAsset;
 }
 
 export class DoubaoVideoGenerator extends FFmpegExecutor {
@@ -44,33 +41,23 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         super();
     }
 
-    async generateSingleVideoSegmentToPath(
+    async generateVideoSegment(
         segment: Segment,
         config: VideoConfig,
-        tempOutputPath: string,
-        finalOutputPath: string
+        outputPath: string
     ): Promise<VideoAsset> {
-        // 初始化API密钥
         this.apiKey = config.apiKey;
 
-        // 确保输出目录存在
-        await this.ensureDirectory(path.dirname(tempOutputPath));
-        await this.ensureDirectory(path.dirname(finalOutputPath));
-
         try {
-            // 生成并下载视频段
             const videoUrl = await this.callVideoAPI(segment);
-            await this.downloadVideo(videoUrl, tempOutputPath);
-
-            // 合成音频和字幕
-            await this.compositeVideo(segment, tempOutputPath, finalOutputPath, config);
+            await this.downloadVideo(videoUrl, outputPath);
 
             // 获取视频信息
-            const videoInfo = await this.getVideoInfo(finalOutputPath);
+            const videoInfo = await this.getVideoInfo(outputPath);
 
             const videoAsset: VideoAsset = {
                 id: segment.id,
-                filePath: finalOutputPath,
+                filePath: outputPath,
                 duration: videoInfo.duration,
                 resolution: config.size,
                 fileSize: videoInfo.fileSize,
@@ -84,34 +71,11 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    async mergeVideoSegmentsToPath(
-        videoAssets: VideoAsset[],
-        config: VideoConfig,
-        outputPath: string
-    ): Promise<VideoAsset> {
-        try {
-            await this.runFFmpegMerge(videoAssets, outputPath, config);
-
-            const videoInfo = await this.getVideoInfo(outputPath);
-
-            return {
-                id: 'merged',
-                filePath: outputPath,
-                duration: videoInfo.duration,
-                resolution: config.size,
-                fileSize: videoInfo.fileSize,
-                format: config.format,
-                createdAt: new Date()
-            };
-        } catch (error) {
-            throw new Error(`Failed to merge video segments: ${error.message}`);
-        }
-    }
-
     private async callVideoAPI(segment: Segment): Promise<string> {
         try {
             // console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
-            const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${Math.ceil(segment.audioAsset.timing.duration)}`;
+            const duration = Math.ceil(segment.duration);
+            const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${duration}`;
 
             const content = [
                 {
@@ -172,89 +136,6 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    private async compositeVideo(
-        segment: Segment,
-        inputPath: string,
-        outputPath: string,
-        config: VideoConfig
-    ): Promise<void> {
-        this.context.reportLog(`Compositing video with audio and subtitles`, "stdout");
-
-        try {
-            // 验证输入文件
-            await fs.access(inputPath);
-            await fs.access(segment.audioAsset.filePath);
-            await fs.access(segment.subtitleAsset.filePath);
-
-            const resolution = config.size.replace('x', ':');
-
-            // 构建 FFmpeg 命令
-            const filterComplex = `subtitles='${segment.subtitleAsset.filePath.replace(/'/g, "\\'")}',scale=${resolution}`;
-
-            const args = [
-                '-y',
-                '-i', inputPath,
-                '-i', segment.audioAsset.filePath,
-                '-c:v', "libx264",
-                '-c:a', 'aac',
-                '-b:a', '128k',
-                '-pix_fmt', 'yuv420p',
-                '-vf', filterComplex,
-                '-t', Math.ceil(segment.audioAsset.timing.duration).toString(),
-                '-shortest',
-                outputPath
-            ];
-
-            await this.runFFmpegCommand(args);
-            this.context.reportLog(`✓ Video composite completed: ${outputPath}`, "stdout");
-        } catch (error) {
-            throw new Error(`Failed to composite video: ${error.message}`);
-        }
-    }
-
-    private async runFFmpegMerge(
-        videoAssets: VideoAsset[],
-        outputPath: string,
-        config: VideoConfig
-    ): Promise<void> {
-        if (videoAssets.length === 0) {
-            throw new Error('No video assets to merge');
-        }
-
-        if (videoAssets.length === 1) {
-            await fs.copyFile(videoAssets[0].filePath, outputPath);
-            return;
-        }
-
-        const fileListPath = path.join(path.dirname(outputPath), 'filelist.txt');
-        const fileListContent = videoAssets.map(asset => `file '${asset.filePath}'`).join('\n');
-        await fs.writeFile(fileListPath, fileListContent, 'utf8');
-
-        try {
-            const resolution = config.size.replace('x', ':');
-
-            const mergeArgs = [
-                '-y',
-                '-f', 'concat',
-                '-safe', '0',
-                '-i', fileListPath,
-                '-c:v', "libx264",
-                '-c:a', 'aac',
-                '-vf', `scale=${resolution}`,
-                '-pix_fmt', 'yuv420p',
-                outputPath
-            ];
-
-            await this.runFFmpegCommand(mergeArgs);
-            await fs.unlink(fileListPath).catch(() => { });
-
-            this.context.reportLog(`✓ Video merge completed: ${outputPath}`, "stdout");
-        } catch (error) {
-            await fs.unlink(fileListPath).catch(() => { });
-            throw error;
-        }
-    }
-
     private async createDoubaoTask(request: any): Promise<any> {
         const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks`, {
             method: 'POST',
@@ -308,9 +189,5 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
 
         throw new Error(`Task ${taskId} timed out after ${maxAttempts} attempts`);
-    }
-
-    private async ensureDirectory(dir: string) {
-        return await fs.mkdir(dir, { recursive: true });
     }
 }

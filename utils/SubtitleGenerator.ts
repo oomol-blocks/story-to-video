@@ -38,13 +38,11 @@ export class SubtitleGenerator {
         const { texts, outputDir } = params;
         const subtitleAssets: SubtitleAsset[] = [];
 
-        await this.ensureDirectory(outputDir);
-
         for (let i = 0; i < texts.length; i++) {
             const text = texts[i];
             this.context.reportLog(`Generating subtitle ${i + 1}/${texts.length}`, "stdout");
 
-            const subtitleAsset = await this.generateSingleSubtitle(text, config, outputDir);
+            const subtitleAsset = await this.generateSubtitle(text, config, outputDir);
             subtitleAssets.push(subtitleAsset);
 
             this.context.reportProgress((i + 1) / texts.length * 100);
@@ -53,7 +51,7 @@ export class SubtitleGenerator {
         return { subtitleAssets };
     }
 
-    async generateSingleSubtitle(
+    async generateSubtitle(
         text: { id: string; content: string; sentences?: string[]; timing: TimingInfo },
         config: SubtitleConfig,
         outputPath: string
@@ -99,7 +97,7 @@ export class SubtitleGenerator {
         if (text.sentences && text.sentences.length > 0) {
             return this.generateSRTWithSentences(text.sentences, text.timing);
         } else {
-            return this.generateSRTSingle(text.content, text.timing);
+            return this._generateSRT(text.content, text.timing);
         }
     }
 
@@ -124,7 +122,7 @@ ${formattedText.replace(/\\N/g, '\n')}
         return srtContent;
     }
 
-    private generateSRTSingle(content: string, timing: TimingInfo): string {
+    private _generateSRT(content: string, timing: TimingInfo): string {
         const duration = timing.duration;
         const formattedText = this.formatTextWithLineBreaks(content);
 
@@ -143,7 +141,7 @@ ${formattedText.replace(/\\N/g, '\n')}
         if (text.sentences && text.sentences.length > 0) {
             assEvents = this.generateAssEventsWithSentences(text.sentences, text.timing);
         } else {
-            assEvents = this.generateAssEventsSingle(text.content, text.timing);
+            assEvents = this.generateAssEvents(text.content, text.timing);
         }
 
         return assHeader + assEvents;
@@ -171,7 +169,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 ${assEvents}`;
     }
 
-    private generateAssEventsSingle(content: string, timing: TimingInfo): string {
+    private generateAssEvents(content: string, timing: TimingInfo): string {
         // 对于视频段，每个段落都应该从 0 开始
         const duration = timing.duration;
         const startTimeFormatted = this.formatAssTime(0); // 从 0 开始
@@ -189,7 +187,7 @@ Dialogue: 0,${startTimeFormatted},${endTimeFormatted},Default,,20,20,40,,${forma
         if (text.sentences && text.sentences.length > 0) {
             return this.generateVTTWithSentences(text.sentences, text.timing);
         } else {
-            return this.generateVTTSingle(text.content, text.timing);
+            return this._generateVTT(text.content, text.timing);
         }
     }
 
@@ -213,7 +211,7 @@ ${formattedText.replace(/\\N/g, '\n')}
         return vttContent;
     }
 
-    private generateVTTSingle(content: string, timing: TimingInfo): string {
+    private _generateVTT(content: string, timing: TimingInfo): string {
         const duration = timing.duration;
         const formattedText = this.formatTextWithLineBreaks(content);
 
@@ -288,14 +286,6 @@ WrapStyle: 0
             return stats.size;
         } catch (error) {
             throw new Error(`Failed to get file size for ${filePath}: ${error.message}`);
-        }
-    }
-
-    private async ensureDirectory(dir: string): Promise<void> {
-        try {
-            await fs.mkdir(dir, { recursive: true });
-        } catch (error) {
-            throw new Error(`Failed to create directory ${dir}: ${error}`);
         }
     }
 }

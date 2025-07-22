@@ -116,7 +116,7 @@ export class CachedSubtitleGenerator {
             const text = params.texts[i];
 
             // 生成单个字幕文件
-            const subtitleAsset = await this.generateSingleSubtitleCached(text, config, params);
+            const subtitleAsset = await this.generateSubtitleCached(text, config, params);
 
             // 更新状态
             state.subtitleAssets.push(subtitleAsset);
@@ -129,7 +129,7 @@ export class CachedSubtitleGenerator {
     /**
      * 生成单个字幕文件
      */
-    private async generateSingleSubtitleCached(
+    private async generateSubtitleCached(
         text: { id: string; content: string; sentences?: string[]; timing: any },
         config: SubtitleConfig,
         params: SubtitleGeneratorInputs
@@ -139,16 +139,16 @@ export class CachedSubtitleGenerator {
             const filePath = path.join(params.outputDir, `subtitle_${text.id}.${config.format}`);
             return await this.stepCache.executeStep(
                 `subtitle-${text.id}`,
-                () => this.generator.generateSingleSubtitle(text, config, filePath),
+                () => this.generator.generateSubtitle(text, config, filePath),
                 `Generate subtitle for text ${text.id}`
             );
         } else {
             // 如果没有 outputDir，使用文件管理器放置到特定的文件中
-            return await this.generateSingleSubtitleWithFileManagement(text, config);
+            return await this.generateSubtitleWithFileManagement(text, config);
         }
     }
 
-    private async generateSingleSubtitleWithFileManagement(
+    private async generateSubtitleWithFileManagement(
         text: { id: string; content: string; sentences?: string[]; timing: any },
         config: SubtitleConfig
     ) {
@@ -166,7 +166,7 @@ export class CachedSubtitleGenerator {
                     // 更新状态为处理
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.PROCESSING);
 
-                    const subtitleAsset = await this.generator.generateSingleSubtitle(
+                    const subtitleAsset = await this.generator.generateSubtitle(
                         text,
                         config,
                         managedFile.tempPath

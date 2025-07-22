@@ -32,16 +32,13 @@ export class AudioGenerator extends FFmpegExecutor {
         super();
     }
 
-    async generateSingleAudioToPath(
+    async generateAudio(
         text: { id: string; content: string; },
         config: AudioConfig,
         outputPath: string,
         startTime: number
     ): Promise<AudioAsset> {
         this.context.reportLog(`Generating audio for text: ${text.content}`, "stdout");
-
-        // 确保输出目录存在
-        await this.ensureDirectory(path.dirname(outputPath));
 
         // 调用API生成音频
         await this.callAudioAPI(text.content, config, outputPath);
@@ -123,14 +120,6 @@ export class AudioGenerator extends FFmpegExecutor {
             await fs.writeFile(outputPath, Buffer.from(audioBuffer));
         } catch (e) {
             throw new Error(`TTS API failed: ${e.message}`);
-        }
-    }
-
-    private async ensureDirectory(dir: string): Promise<void> {
-        try {
-            await fs.mkdir(dir, { recursive: true });
-        } catch (error) {
-            throw new Error(`Failed to create directory ${dir}: ${error}`);
         }
     }
 }

@@ -111,7 +111,7 @@ export class CachedAudioGenerator {
             const text = params.texts[i];
 
             // 生成单个音频
-            const audioAsset = await this.generateSingleAudioCached(text, params, state.currentStartTime);
+            const audioAsset = await this.generateAudioCached(text, params, state.currentStartTime);
 
             // 更新状态
             state.audioAssets.push(audioAsset);
@@ -125,7 +125,7 @@ export class CachedAudioGenerator {
     /**
      * 生成单个音频文件，判断是否有缓存
      */
-    private async generateSingleAudioCached(
+    private async generateAudioCached(
         text: { id: string; content: string },
         params: AudioGeneratorInputs,
         startTime: number
@@ -136,16 +136,16 @@ export class CachedAudioGenerator {
 
             return await this.stepCache.executeStep(
                 `audio-${text.id}`,
-                () => this.generator.generateSingleAudioToPath(text, params.config, filePath, startTime),
+                () => this.generator.generateAudio(text, params.config, filePath, startTime),
                 `Generate audio for text ${text.id}`
             );
         } else {
             // 如果没有 outputDir，使用文件管理器放置到特定的文件中
-            return await this.generateSingleAudioWithFileManagement(text, params, startTime);
+            return await this.generateAudioWithFileManagement(text, params, startTime);
         }
     }
 
-    private async generateSingleAudioWithFileManagement(
+    private async generateAudioWithFileManagement(
         text: { id: string; content: string },
         params: AudioGeneratorInputs,
         startTime: number
@@ -165,7 +165,7 @@ export class CachedAudioGenerator {
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.PROCESSING);
 
                     // 生成音频到临时路径
-                    const tempAudioAsset = await this.generator.generateSingleAudioToPath(
+                    const tempAudioAsset = await this.generator.generateAudio(
                         text,
                         params.config,
                         managedFile.tempPath!,

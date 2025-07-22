@@ -107,7 +107,7 @@ export class CachedImageGenerator {
             const prompt = params.prompts[i];
 
             // 生成单个图片
-            const imageAsset = await this.generateSingleImageCached(prompt, params);
+            const imageAsset = await this.generateImageCached(prompt, params);
 
             // 更新状态
             state.imageAssets.push(imageAsset);
@@ -120,7 +120,7 @@ export class CachedImageGenerator {
     /**
      * 生成单个图片文件
      */
-    private async generateSingleImageCached(
+    private async generateImageCached(
         prompt: { id: string; content: string; style?: string },
         params: ImageGeneratorInputs
     ) {
@@ -130,16 +130,16 @@ export class CachedImageGenerator {
 
             return await this.stepCache.executeStep(
                 `image-${prompt.id}`,
-                () => this.generator.generateSingleImage(prompt, params.config, filePath),
+                () => this.generator.generateImage(prompt, params.config, filePath),
                 `Generate image for prompt ${prompt.id}`
             );
         } else {
             // 如果没有 outputDir，使用文件管理器放置到特定的文件中
-            return await this.generateSingleImageWithFileManagement(prompt, params);
+            return await this.generateImageWithFileManagement(prompt, params);
         }
     }
 
-    private async generateSingleImageWithFileManagement(
+    private async generateImageWithFileManagement(
         prompt: { id: string; content: string; style?: string },
         params: ImageGeneratorInputs
     ) {
@@ -157,7 +157,7 @@ export class CachedImageGenerator {
                     // 更新状态为处理
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.PROCESSING);
 
-                    const imageAsset = this.generator.generateSingleImage(prompt, params.config, managedFile.tempPath)
+                    const imageAsset = this.generator.generateImage(prompt, params.config, managedFile.tempPath)
 
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.COMPLETED);
 

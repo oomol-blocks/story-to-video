@@ -38,13 +38,11 @@ export class ImageGenerator {
         const { prompts, config, outputDir } = params;
         const imageAssets: ImageAsset[] = [];
 
-        await this.ensureDirectory(outputDir);
-
         for (let i = 0; i < prompts.length; i++) {
             const prompt = prompts[i];
             this.context.reportLog(`Generating image ${i + 1}/${prompts.length}`, "stdout");
 
-            const imageAsset = await this.generateSingleImage(prompt, config, outputDir);
+            const imageAsset = await this.generateImage(prompt, config, outputDir);
             imageAssets.push(imageAsset);
 
             this.context.reportProgress((i + 1) / prompts.length * 100);
@@ -53,7 +51,7 @@ export class ImageGenerator {
         return { imageAssets }
     }
 
-    async generateSingleImage(
+    async generateImage(
         prompt: { id: string; content: string; style?: string; },
         config: ImageConfig,
         outputPath: string
@@ -254,9 +252,5 @@ export class ImageGenerator {
         }
 
         throw new Error('Unsupported WebP format');
-    }
-
-    private async ensureDirectory(dir: string) {
-        return await fs.mkdir(dir, { recursive: true });
     }
 }

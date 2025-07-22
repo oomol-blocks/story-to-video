@@ -376,6 +376,7 @@ nodes:
           description: Output
       outputs_def:
         - handle: texts
+          description: Output
           json_schema:
             type: array
             items:
@@ -388,8 +389,7 @@ nodes:
                   type: string
                 timing:
                   type: string
-          nullable: true
-          description: Output
+          nullable: false
       executor:
         name: nodejs
         options:
@@ -435,6 +435,8 @@ nodes:
           - node_id: +typescript#8
             output_handle: texts
       - handle: config
+        value:
+          voice: ""
         from_flow:
           - input_handle: audioConfig
     ignore: false
@@ -749,7 +751,6 @@ inputs_def:
     json_schema:
       type: string
       ui:widget: dir
-    value: /oomol-driver/oomol-storage/output2
     nullable: false
 outputs_def:
   - handle: mergedVideoAsset

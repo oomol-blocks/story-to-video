@@ -26,10 +26,12 @@ inputs_def:
           enum:
             - FunAudioLLM/CosyVoice2-0.5B:alex
             - alloy
+            - FunAudioLLM/CosyVoice2-0.5B:anna
           ui:options:
             labels:
               - OOMOL_FUN_AUDIO_ALEX
               - GPT_ALLOY
+              - OOMOL_FUN_AUDIO_ANNA
         apiKey:
           contentMediaType: oomol/secret
           type: string

@@ -47,6 +47,11 @@
           "x": 2598.9738226145582,
           "y": 50.810988938899506
         }
+      },
+      "sections": {
+        "preview": {
+          "cardCollapsed": true
+        }
       }
     },
     "+typescript#8": {
@@ -72,6 +77,13 @@
         }
       },
       "sections": {
+        "inputs": {
+          "collapsed": {
+            "audioConfig": {
+              "[]": true
+            }
+          }
+        },
         "outputs": {
           "collapsed": {
             "videoAsset": {

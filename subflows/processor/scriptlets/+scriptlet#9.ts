@@ -3,7 +3,7 @@ type Inputs = {
     audioAssets: Record<string, any>[];
 };
 type Outputs = {
-    texts: { id: string; content: string; timing: string }[] | null;
+    texts: { id: string; content: string; timing: string }[];
 };
 //#endregion
 
@@ -20,7 +20,7 @@ export default async function (
         content: asset.transcript,
         sentences: asset.sentences,
         timing: asset.timing
-    }))
+    }));
 
-    return { texts }
+    return { texts };
 };

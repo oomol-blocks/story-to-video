@@ -18,7 +18,7 @@ inputs_def:
             type: string
           timing:
             type: string
-    nullable: true
+    nullable: false
 outputs_def:
   - handle: subtitleAssets
     json_schema:

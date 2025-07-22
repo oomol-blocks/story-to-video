@@ -53,22 +53,20 @@ export class SubtitleGenerator {
         return { subtitleAssets };
     }
 
-    private async generateSingleSubtitle(
+    async generateSingleSubtitle(
         text: { id: string; content: string; sentences?: string[]; timing: TimingInfo },
         config: SubtitleConfig,
-        outputDir: string
+        outputPath: string
     ): Promise<SubtitleAsset> {
-        const filePath = `${outputDir}/subtitle_${text.id}.${config.format}`;
-
         // 根据格式生成字幕文件
         const subtitleContent = await this.generateSubtitleContent(text, config);
-        await this.writeSubtitleFile(filePath, subtitleContent, config.encoding);
+        await this.writeSubtitleFile(outputPath, subtitleContent, config.encoding);
 
-        const fileSize = await this.getFileSize(filePath);
+        const fileSize = await this.getFileSize(outputPath);
 
         return {
             id: text.id,
-            filePath,
+            filePath: outputPath,
             content: text.content,
             duration: text.timing.duration,
             language: config.language,

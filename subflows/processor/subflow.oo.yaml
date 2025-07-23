@@ -92,7 +92,7 @@ nodes:
         options:
           entry: scriptlets/+scriptlet#4.ts
           spawn: false
-    ignore: true
+    ignore: false
   - node_id: +typescript#6
     title: "formatTranscript"
     icon: ":skill-icons:typescript:"

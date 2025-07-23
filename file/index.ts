@@ -1,25 +1,4 @@
-import { Context } from "@oomol/types/oocana";
-
-import { FileManager, FileType, IFileManager, ManagedFile } from "../file/FileManager";
-import { CacheManager } from "~/cache/CacheManager";
-
-
-export async function createdManagers(context: Context<any, any>): Promise<{
-    cacheManager: CacheManager;
-    fileManager: FileManager;
-    cleanup: () => Promise<void>;
-}> {
-    const cacheManager = CacheManager.getInstance(context);
-    await cacheManager.initialize();
-
-    const fileManager = new FileManager(context, cacheManager);
-    await fileManager.initialize();
-
-    const cleanup = async () => {
-        await fileManager.destroy();
-    }
-    return { cacheManager, fileManager, cleanup };
-}
+import { FileType, IFileManager, ManagedFile } from "./FileManager";
 
 // Audio/Image/Subtitle/Video 文件管理
 export class AudioFileManager {

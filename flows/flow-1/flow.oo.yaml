@@ -6,7 +6,6 @@ nodes:
         json_schema:
           type: string
           ui:widget: file
-        value: /oomol-driver/oomol-storage/# 为什么人类不能永生？.md
       - handle: imageConfig
         json_schema:
           type: object
@@ -143,7 +142,6 @@ nodes:
         json_schema:
           type: string
           ui:widget: dir
-        value: /oomol-driver/oomol-storage/output4
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:

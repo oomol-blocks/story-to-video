@@ -1,7 +1,7 @@
 import type { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises"
 
-import { MediaAsset, SubtitleConfig, TimingInfo } from "./constants";
+import { MediaAsset, SubtitleConfig, TimingInfo } from "../utils/constants";
 
 export interface SubtitleAsset extends MediaAsset {
     content: string;

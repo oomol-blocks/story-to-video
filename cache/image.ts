@@ -1,64 +1,44 @@
 import type { Context } from "@oomol/types/oocana";
 import path from "path";
 
-import { ImageGenerator, ImageGeneratorInputs, ImageGeneratorOutputs } from "~/utils/ImageGenarator";
+import { ImageGenerator, ImageGeneratorInputs, ImageGeneratorOutputs } from "~/core/ImageGenarator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
-import { createdManagers, ImageFileManager } from "~/file";
+import { ImageFileManager } from "~/file";
 import { FileManager, FileStatus } from "~/file/FileManager";
-
-export async function createCachedImageGenerator(
-    context: Context<ImageGeneratorInputs, ImageGeneratorOutputs>,
-    blockId: string
-): Promise<{ generator: CachedImageGenerator, cleanup: () => Promise<void> }> {
-    const cacheManager = CacheManager.getInstance(context);
-    const generator = new CachedImageGenerator(context, cacheManager, blockId);
-
-    await generator.initialize();
-
-    return {
-        generator,
-        cleanup: async () => {
-            await generator.destroy();
-        }
-    };
-}
 
 export class CachedImageGenerator {
     private stepCache: StepCache;
     private generator: ImageGenerator;
     private imageFileManager: ImageFileManager;
     private fileManager: FileManager;
-    private cleanup?: () => Promise<void>;
-    private isInitialized = false;
+    private initPromise: Promise<void>;
 
     constructor(
         private context: Context<ImageGeneratorInputs, ImageGeneratorOutputs>,
         private cacheManager: CacheManager,
-        private BLOCK_ID: string
+        BLOCK_ID: string
     ) {
         this.stepCache = new StepCache(cacheManager, BLOCK_ID, context);
         this.generator = new ImageGenerator(context);
+
+        this.initPromise = this.doInitialize();
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
+    private async doInitialize(): Promise<void> {
         try {
-            const managers = await createdManagers(this.context);
-            this.fileManager = managers.fileManager;
-            this.cleanup = managers.cleanup;
+            this.fileManager = new FileManager(this.context, this.cacheManager);
+            await this.fileManager.initialize();
+
             this.imageFileManager = new ImageFileManager(this.fileManager);
-            this.isInitialized = true;
         } catch (error) {
             throw new Error(`Failed to initialize CachedImageGenerator: ${error.message}`);
         }
     }
 
-    private ensureInitialized(): void {
-        if (!this.isInitialized || !this.fileManager || !this.imageFileManager) {
-            throw new Error('CachedImageGenerator not initialized. Call initialize() first.');
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
+        if (!this.fileManager || !this.imageFileManager) {
+            throw new Error('CachedImageGenerator initialization failed');
         }
     }
 
@@ -66,7 +46,7 @@ export class CachedImageGenerator {
      * 生成图片
      */
     async generateImages(params: ImageGeneratorInputs, resumeData?: any): Promise<ImageGeneratorOutputs> {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         this.context.reportLog('Generating images...', "stdout");
 
         // 初始化状态
@@ -180,7 +160,7 @@ export class CachedImageGenerator {
     private async saveProgress(completed: number, total: number, state: any) {
         const progress = (completed / total) * 100;
 
-        await this.cacheManager.updateBlockProgress(this.BLOCK_ID, progress, {
+        await this.cacheManager.updateProgress(progress, {
             completedCount: completed,
             imageAssets: [...state.imageAssets]
         });
@@ -203,9 +183,9 @@ export class CachedImageGenerator {
     }
 
     async destroy(): Promise<void> {
-        if (this.cleanup) {
-            await this.cleanup();
-            this.context.reportLog("CachedImageGenerator destroyed", "stdout");
+        await this.initPromise;
+        if (this.fileManager) {
+            await this.fileManager.destroy();
         }
     }
 }

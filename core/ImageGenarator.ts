@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import { Context } from "@oomol/types/oocana";
 
-import { ImageConfig, MediaAsset } from "./constants";
+import { ImageConfig, MediaAsset } from "../utils/constants";
 
 export interface ImageAsset extends MediaAsset {
     width: number;

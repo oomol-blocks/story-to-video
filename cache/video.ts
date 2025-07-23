@@ -1,64 +1,45 @@
 import type { Context } from "@oomol/types/oocana";
 import path from "path";
 
-import { DoubaoVideoGenerator, VideoGeneratorInputs, VideoGeneratorOutputs, Segment } from "~/utils/VideoGenerator";
+import { DoubaoVideoGenerator, VideoGeneratorInputs, VideoGeneratorOutputs, Segment } from "~/core/VideoGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
-import { createdManagers, VideoFileManager } from "~/file";
+import { VideoFileManager } from "~/file";
 import { FileManager, FileStatus } from "~/file/FileManager";
 
-export async function createCachedVideoGenerator(
-    context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
-    blockId: string
-): Promise<{ generator: CachedVideoGenerator, cleanup: () => Promise<void> }> {
-    const cacheManager = CacheManager.getInstance(context);
-    const generator = new CachedVideoGenerator(context, cacheManager, blockId);
-
-    await generator.initialize();
-
-    return {
-        generator,
-        cleanup: async () => {
-            await generator.destroy();
-        }
-    };
-}
 
 export class CachedVideoGenerator {
     private stepCache: StepCache;
     private generator: DoubaoVideoGenerator;
     private videoFileManager: VideoFileManager;
     private fileManager: FileManager;
-    private cleanup?: () => Promise<void>;
-    private isInitialized = false;
+    private initPromise: Promise<void>;
 
     constructor(
         private context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
         private cacheManager: CacheManager,
-        private BLOCK_ID: string
+        BLOCK_ID: string
     ) {
         this.stepCache = new StepCache(cacheManager, BLOCK_ID, context);
         this.generator = new DoubaoVideoGenerator(context);
+
+        this.initPromise = this.doInitialize();
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
+    private async doInitialize(): Promise<void> {
         try {
-            const managers = await createdManagers(this.context);
-            this.fileManager = managers.fileManager;
-            this.cleanup = managers.cleanup;
+            this.fileManager = new FileManager(this.context, this.cacheManager);
+            await this.fileManager.initialize();
+
             this.videoFileManager = new VideoFileManager(this.fileManager);
-            this.isInitialized = true;
         } catch (error) {
-            throw new Error(`Failed to initialize CachedVideoGenerator: ${error.message}`);
+            throw new Error(`Failed to initialize CachedAudioGenerator: ${error.message}`);
         }
     }
 
-    private ensureInitialized(): void {
-        if (!this.isInitialized || !this.fileManager || !this.videoFileManager) {
-            throw new Error('CachedVideoGenerator not initialized. Call initialize() first.');
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
+        if (!this.fileManager || !this.videoFileManager) {
+            throw new Error('CachedVideoGenerator initialization failed');
         }
     }
 
@@ -66,7 +47,7 @@ export class CachedVideoGenerator {
      * 生成视频
      */
     async generateVideo(params: VideoGeneratorInputs, segments: Segment[], resumeData?: any): Promise<VideoGeneratorOutputs> {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         this.context.reportLog('Generating video segments...', "stdout");
 
         // 初始化状态
@@ -80,7 +61,7 @@ export class CachedVideoGenerator {
             return this.buildResult(state);
         } catch (error) {
             // 保存当前状态
-            await this.cacheManager.updateBlockProgress(this.BLOCK_ID, (state.startIndex / segments.length) * 80, {
+            await this.cacheManager.updateProgress((state.startIndex / segments.length) * 80, {
                 videoAssets: state.videoAssets,
                 currentSegmentIndex: state.startIndex,
                 error: error.message
@@ -204,7 +185,7 @@ export class CachedVideoGenerator {
     private async saveProgress(completed: number, total: number, state: any, maxProgress: number = 100) {
         const progress = (completed / total) * maxProgress;
 
-        await this.cacheManager.updateBlockProgress(this.BLOCK_ID, progress, {
+        await this.cacheManager.updateProgress(progress, {
             videoAssets: [...state.videoAssets],
             currentSegmentIndex: completed
         });
@@ -221,9 +202,9 @@ export class CachedVideoGenerator {
     }
 
     async destroy(): Promise<void> {
-        if (this.cleanup) {
-            await this.cleanup();
-            this.context.reportLog("CachedVideoGenerator destroyed", "stdout");
+        await this.initPromise;
+        if (this.fileManager) {
+            await this.fileManager.destroy();
         }
     }
 }

@@ -3,7 +3,7 @@ import * as fs from "node:fs/promises";
 
 import { FFmpegExecutor } from "./FFmpegExcutor";
 import { ImageAsset } from "./ImageGenarator";
-import { MediaAsset, VideoConfig } from "./constants";
+import { MediaAsset, VideoConfig } from "../utils/constants";
 
 export interface VideoAsset extends MediaAsset {
     duration: number;
@@ -73,7 +73,6 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
 
     private async callVideoAPI(segment: Segment): Promise<string> {
         try {
-            // console.log(segment.imageAsset.prompt, segment.audioAsset.timing.duration)
             const duration = Math.ceil(segment.duration);
             const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${duration}`;
 

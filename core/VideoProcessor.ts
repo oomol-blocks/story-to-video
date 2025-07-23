@@ -2,7 +2,7 @@ import type { Context } from "@oomol/types/oocana";
 import fs from "fs/promises";
 import { FFmpegExecutor } from "./FFmpegExcutor";
 import { VideoAsset } from "./VideoGenerator";
-import { VideoConfig } from "./constants";
+import { VideoConfig } from "../utils/constants";
 import { AudioAsset } from "./AudioGenerator";
 import { SubtitleAsset } from "./SubtitleGenerator";
 

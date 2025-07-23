@@ -35,7 +35,7 @@ export interface BlockCacheInfo {
 }
 
 export interface CacheState {
-    blocks: Record<string, BlockCacheInfo>;
+    block: BlockCacheInfo;
     lastUpdated: number;
 }
 
@@ -44,44 +44,14 @@ export class CacheManager extends EventEmitter {
     private stateFile: string;
     private state: CacheState;
     private isInitialized = false;
-    private static instance: CacheManager | null = null;
 
-    // TODO:
-    private saveQueue: Promise<void> = Promise.resolve();
-    private isStateDirty = false;
-    private saveTimeout: NodeJS.Timeout | null = null;
-
-    private static instanceCount = 0;
-    private instanceId: number;
-
-    constructor(private context: Context<any, any>) {
+    constructor(private context: Context<any, any>, private BLOCK_ID: string) {
         super();
-        this.instanceId = ++CacheManager.instanceCount;
-        this.context.reportLog(`🔧 CacheManager instance #${this.instanceId} created`, "stdout");
 
         this.cacheDir = path.join(context.pkgDir, 'workflow-cache');
-        this.stateFile = path.join(this.cacheDir, 'workflow-state.json');
-        this.state = {
-            blocks: {},
-            lastUpdated: Date.now()
-        };
-    }
+        this.stateFile = path.join(this.cacheDir, `workflow-state-${BLOCK_ID}.json`);
 
-    /**
-     * 单例模式：整个应用只有一个缓存管理器实例
-     */
-    static getInstance(context: Context<any, any>): CacheManager {
-        if (!CacheManager.instance) {
-            CacheManager.instance = new CacheManager(context);
-            context.reportLog(`🔧 Created new CacheManager singleton instance`, "stdout");
-        } else {
-            context.reportLog(`🔧 Using existing CacheManager singleton instance`, "stdout");
-        }
-        return CacheManager.instance;
-    }
-
-    static clearInstance(): void {
-        CacheManager.instance = null;
+        this.state = this.createDefaultState();
     }
 
     async initialize(): Promise<void> {
@@ -93,7 +63,309 @@ export class CacheManager extends EventEmitter {
         await this.loadState();
         this.isInitialized = true;
 
-        this.context.reportLog(`Cache initialized: ${Object.keys(this.state.blocks).length} blocks found`, "stdout");
+        const hasCache = this.state !== null;
+        this.context.reportLog(`Cache initialized for block ${this.BLOCK_ID}: ${hasCache ? 'found existing' : 'starting fresh'}`, "stdout");
+    }
+
+    async canSkipBlock(inputs: any): Promise<{
+        canSkip: boolean;
+        outputs?: any;
+        shouldResume?: boolean;
+        resumeData?: any;
+        completedSteps?: string[];
+        progress?: number
+    }> {
+        const inputHash = this.calculateInputHash(inputs);
+        const blockCache = this.state.block;
+
+        if (blockCache.status === CacheStatus.NOT_STARTED || !blockCache.inputHash) {
+            this.context.reportLog(`No cache found for block: ${this.BLOCK_ID}`, "stdout");
+            return { canSkip: false };
+        }
+
+
+        // 输入不一致
+        if (blockCache.inputHash !== inputHash) {
+            this.context.reportLog(`Input changed for block: ${this.BLOCK_ID}, invalidating cache`, "stdout");
+            await this.invalidateBlock();
+            return { canSkip: false };
+        }
+
+        // 当前状态以完成并且有输出
+        if (blockCache.status === CacheStatus.COMPLETED && blockCache.outputs) {
+            this.context.reportLog(`✓ Block ${this.BLOCK_ID} found in cache, skipping...`, "stdout");
+            return {
+                canSkip: true,
+                outputs: blockCache.outputs,
+                progress: 100
+            };
+        }
+
+        // 如果已经是正在进行中或失败，则获取已经存储的数据
+        if (blockCache.status === CacheStatus.IN_PROGRESS || blockCache.status === CacheStatus.FAILED) {
+            const completedSteps = Object.keys(blockCache.steps).filter(
+                stepId => blockCache.steps[stepId].status === CacheStatus.COMPLETED
+            );
+
+            if (completedSteps.length > 0 || blockCache.progress > 0) {
+                this.context.reportLog(
+                    `Block ${this.BLOCK_ID} can be resumed from ${blockCache.progress}% (${completedSteps.length} steps completed)`,
+                    "stdout"
+                );
+
+                return {
+                    canSkip: false,
+                    shouldResume: true,
+                    resumeData: blockCache.resumeData,
+                    completedSteps,
+                    progress: blockCache.progress
+                };
+            }
+        }
+
+        return { canSkip: false };
+    }
+
+    async startBlock(inputs: any, resumeData?: any): Promise<void> {
+        const inputHash = this.calculateInputHash(inputs);
+
+        if (this.state && this.state.block.inputHash === inputHash && this.state.block.status !== CacheStatus.NOT_STARTED) {
+            this.state.block.status = CacheStatus.IN_PROGRESS;
+            if (resumeData) {
+                this.state.block.resumeData = resumeData;
+            }
+        } else {
+            this.state.block = {
+                blockId: this.BLOCK_ID,
+                inputHash,
+                status: CacheStatus.IN_PROGRESS,
+                progress: 0,
+                startTime: Date.now(),
+                steps: {},
+                resumeData
+            };
+        }
+
+        await this.saveState();
+        this.context.reportLog(`Started block ${this.BLOCK_ID}`, "stdout");
+    }
+
+    async completeStepWithFiles(stepId: string, data?: any, fileIds?: string[]): Promise<void> {
+        this.state.block.steps[stepId] = {
+            stepId,
+            status: CacheStatus.COMPLETED,
+            data,
+            timestamp: Date.now(),
+            fileIds: fileIds || []
+        };
+
+        // 将文件 ID 添加到块级别
+        if (fileIds && fileIds.length > 0) {
+            if (!this.state.block.fileIds) {
+                this.state.block.fileIds = [];
+            }
+            this.state.block.fileIds.push(...fileIds);
+        }
+
+        await this.saveState();
+        this.context.reportLog(`✓ Step ${stepId} completed with ${fileIds?.length || 0} files`, "stdout");
+    }
+
+    async isStepCompleted(stepId: string): Promise<{ completed: boolean; data?: any }> {
+        if (!this.state) {
+            this.context.reportLog(`this.state is null`, "stderr");
+            return { completed: false };
+        }
+
+        const stepCache = this.state.block.steps[stepId];
+        if (stepCache?.status === CacheStatus.COMPLETED) {
+            this.context.reportLog(`✓ Step ${stepId} found in cache, skipping...`, "stdout");
+            return { completed: true, data: stepCache.data };
+        }
+
+        return { completed: false };
+    }
+
+    async completeStep(stepId: string, data?: any): Promise<void> {
+        await this.completeStepWithFiles(stepId, data);
+    }
+
+    async failStep(stepId: string, error: string): Promise<void> {
+        this.state.block.steps[stepId] = {
+            stepId,
+            status: CacheStatus.FAILED,
+            data: { error },
+            timestamp: Date.now()
+        };
+
+        await this.saveState();
+        this.context.reportLog(`✗ Step ${stepId} failed: ${error}`, "stderr");
+    }
+
+    async updateProgress(progress: number, resumeData?: any): Promise<void> {
+        this.state.block.progress = Math.min(100, Math.max(0, progress));
+        this.state.block.status = CacheStatus.IN_PROGRESS;
+
+        if (resumeData) {
+            this.state.block.resumeData = resumeData;
+        }
+
+        await this.saveState();
+    }
+
+    async completeBlock(outputs: any): Promise<void> {
+        this.state.block.status = CacheStatus.COMPLETED;
+        this.state.block.progress = 100;
+        this.state.block.endTime = Date.now();
+        this.state.block.outputs = outputs;
+        this.state.block.error = undefined;
+        this.state.block.resumeData = undefined;
+
+        // 自动收集所有步骤中的文件ID
+        const allFileIds = new Set<string>();
+
+        // 添加现有的块级别文件ID
+        if (this.state.block.fileIds) {
+            this.state.block.fileIds.forEach(id => allFileIds.add(id));
+        }
+
+        // 添加所有步骤中的文件ID
+        Object.values(this.state.block.steps).forEach(step => {
+            if (step.fileIds) {
+                step.fileIds.forEach(id => allFileIds.add(id));
+            }
+        });
+
+        this.state.block.fileIds = Array.from(allFileIds);
+
+        await this.saveState();
+        this.context.reportLog(`✓ Block ${this.BLOCK_ID} completed with ${allFileIds.size} total files`, "stdout");
+    }
+
+    async failBlock(error: string): Promise<void> {
+        this.state.block.status = CacheStatus.FAILED;
+        this.state.block.error = error;
+        this.state.block.endTime = Date.now();
+
+        await this.saveState();
+        this.context.reportLog(`✗ Block ${this.BLOCK_ID} failed: ${error}`, "stderr");
+
+    }
+
+    private async invalidateBlock(): Promise<void> {
+        // 收集所有相关文件ID
+        const allFileIds = new Set<string>();
+
+        // 块级别的文件
+        if (this.state.block.fileIds) {
+            this.state.block.fileIds.forEach(id => allFileIds.add(id));
+        }
+
+        // 步骤级别的文件
+        Object.values(this.state.block.steps).forEach(step => {
+            if (step.fileIds) {
+                step.fileIds.forEach(id => allFileIds.add(id));
+            }
+        });
+
+        // 清理关联文件
+        if (allFileIds.size > 0) {
+            this.context.reportLog(`Cleaning up ${allFileIds.size} files for block ${this.BLOCK_ID}`, "stdout");
+            this.emit('cache:block:invalidated', { blockId: this.BLOCK_ID, fileIds: Array.from(allFileIds) });
+        }
+
+        // 清理状态文件
+        try {
+            await fs.unlink(this.stateFile);
+            this.context.reportLog(`Invalidated cache file for block ${this.BLOCK_ID}`, "stdout");
+        } catch (error) {
+            // 文件可能不存在，忽略错误
+            this.context.reportLog(`Cache file already removed for block ${this.BLOCK_ID}`, "stdout");
+        }
+
+        // 清除当前状态
+        this.state = this.createDefaultState();
+    }
+
+    private async loadState(): Promise<void> {
+        try {
+            const stateContent = await fs.readFile(this.stateFile, 'utf-8');
+            const loadedState = JSON.parse(stateContent);
+
+            this.state = loadedState;
+            this.context.reportLog(`Loaded cache state with ${Object.keys(this.state.block).length} block`, "stdout");
+        } catch {
+            this.state = this.createDefaultState();
+            this.context.reportLog("No existing cache found, starting fresh", "stdout");
+        }
+    }
+
+    private async saveState(): Promise<void> {
+        try {
+            this.state.lastUpdated = Date.now();
+
+            const stateContent = JSON.stringify(this.state, null, 2);
+
+            // 原子写入
+            const tempFile = `${this.stateFile}.tmp.${Date.now()}.${Math.random().toString(36).substr(2, 5)}`;
+            await fs.writeFile(tempFile, stateContent, 'utf-8');
+            await fs.rename(tempFile, this.stateFile);
+
+            this.context.reportLog(`✓ Cache state saved for block ${this.BLOCK_ID} (${stateContent.length} bytes)`, "stdout");
+        } catch (error) {
+            this.context.reportLog(`Failed to save cache state for block ${this.BLOCK_ID}: ${error}`, "stderr");
+        }
+    }
+
+    async clearCache(): Promise<void> {
+        const allFileIds = new Set<string>();
+
+        if (this.state.block.fileIds) {
+            this.state.block.fileIds.forEach(id => allFileIds.add(id));
+        }
+
+        Object.values(this.state.block.steps).forEach(step => {
+            if (step.fileIds) {
+                step.fileIds.forEach(id => allFileIds.add(id));
+            }
+        });
+
+        if (allFileIds.size > 0) {
+            this.context.reportLog(`Publishing cache clear event: ${allFileIds.size} files`, "stdout");
+            this.emit('cache:cleared', { fileIds: Array.from(allFileIds) });
+        }
+
+        // 清除状态文件
+        try {
+            await fs.unlink(this.stateFile);
+            this.context.reportLog(`Cache cleared for block ${this.BLOCK_ID}`, "stdout");
+        } catch (error) {
+            this.context.reportLog(`Cache file already removed for block ${this.BLOCK_ID}`, "stdout");
+        }
+
+        // 重制 state 状态
+        this.state = this.createDefaultState();
+    }
+
+    private createDefaultState(): CacheState {
+        return {
+            block: {
+                blockId: this.BLOCK_ID,
+                inputHash: '',
+                status: CacheStatus.NOT_STARTED,
+                progress: 0,
+                steps: {},
+            },
+            lastUpdated: Date.now()
+        };
+    }
+
+    private async ensureDirectory(dir: string): Promise<void> {
+        try {
+            await fs.mkdir(dir, { recursive: true });
+        } catch (error) {
+            throw new Error(`Failed to create directory ${dir}: ${error}`);
+        }
     }
 
     private calculateInputHash(inputs: any): string {
@@ -118,390 +390,6 @@ export class CacheManager extends EventEmitter {
         }
         return sortedObj;
     }
-
-    async canSkipBlock(blockId: string, inputs: any): Promise<{
-        canSkip: boolean;
-        outputs?: any;
-        shouldResume?: boolean;
-        resumeData?: any;
-        completedSteps?: string[];
-        progress?: number
-    }> {
-        const inputHash = this.calculateInputHash(inputs);
-        const blockCache = this.state.blocks[blockId];
-
-        this.context.reportLog(`Checking cache for block: ${blockId}`, "stdout");
-
-        // 没有缓存
-        if (!blockCache) {
-            this.context.reportLog(`No cache found for block: ${blockId}`, "stdout");
-            return { canSkip: false };
-        }
-
-        // 输入不一致
-        if (blockCache.inputHash !== inputHash) {
-            this.context.reportLog(`Input changed for block: ${blockId}, invalidating cache`, "stdout");
-            await this.invalidateBlock(blockId);
-            return { canSkip: false };
-        }
-
-        // 当前状态以完成并且有输出
-        if (blockCache.status === CacheStatus.COMPLETED && blockCache.outputs) {
-            this.context.reportLog(`✓ Block ${blockId} found in cache, skipping...`, "stdout");
-            return {
-                canSkip: true,
-                outputs: blockCache.outputs,
-                progress: 100
-            };
-        }
-
-        // 如果已经是正在进行中或失败，则获取已经存储的数据
-        if (blockCache.status === CacheStatus.IN_PROGRESS || blockCache.status === CacheStatus.FAILED) {
-            const completedSteps = Object.keys(blockCache.steps).filter(
-                stepId => blockCache.steps[stepId].status === CacheStatus.COMPLETED
-            );
-
-            if (completedSteps.length > 0 || blockCache.progress > 0) {
-                this.context.reportLog(
-                    `Block ${blockId} can be resumed from ${blockCache.progress}% (${completedSteps.length} steps completed)`,
-                    "stdout"
-                );
-
-                return {
-                    canSkip: false,
-                    shouldResume: true,
-                    resumeData: blockCache.resumeData,
-                    completedSteps,
-                    progress: blockCache.progress
-                };
-            }
-        }
-
-        return { canSkip: false };
-    }
-
-    async startBlock(blockId: string, inputs: any, resumeData?: any): Promise<void> {
-        this.context.reportLog(`🔧 Instance #${this.instanceId} starting block: ${blockId}`, "stdout");
-
-        const inputHash = this.calculateInputHash(inputs);
-
-        if (this.state.blocks[blockId] && this.state.blocks[blockId].inputHash === inputHash) {
-            this.state.blocks[blockId].status = CacheStatus.IN_PROGRESS;
-            if (resumeData) {
-                this.state.blocks[blockId].resumeData = resumeData;
-            }
-        } else {
-            this.state.blocks[blockId] = {
-                blockId,
-                inputHash,
-                status: CacheStatus.IN_PROGRESS,
-                progress: 0,
-                startTime: Date.now(),
-                steps: {},
-                resumeData
-            };
-        }
-
-        await this.saveState();
-        this.context.reportLog(`Started block ${blockId}`, "stdout");
-        this.context.reportLog(`🔧 Instance #${this.instanceId} started block ${blockId}`, "stdout");
-    }
-
-    async completeStepWithFiles(blockId: string, stepId: string, data?: any, fileIds?: string[]): Promise<void> {
-        if (!this.state.blocks[blockId]) {
-            return;
-        }
-
-        this.state.blocks[blockId].steps[stepId] = {
-            stepId,
-            status: CacheStatus.COMPLETED,
-            data,
-            timestamp: Date.now(),
-            fileIds: fileIds || []
-        };
-
-        // 将文件 ID 添加到块级别
-        if (fileIds && fileIds.length > 0) {
-            if (!this.state.blocks[blockId].fileIds) {
-                this.state.blocks[blockId].fileIds = [];
-            }
-            this.state.blocks[blockId].fileIds!.push(...fileIds);
-        }
-
-        await this.saveState();
-        this.context.reportLog(`✓ Step ${stepId} completed with ${fileIds?.length || 0} files`, "stdout");
-    }
-
-    async isStepCompleted(blockId: string, stepId: string): Promise<{ completed: boolean; data?: any }> {
-        const blockCache = this.state.blocks[blockId];
-        if (!blockCache || !blockCache.steps[stepId]) {
-            return { completed: false };
-        }
-
-        const stepCache = blockCache.steps[stepId];
-        if (stepCache.status === CacheStatus.COMPLETED) {
-            this.context.reportLog(`✓ Step ${stepId} found in cache, skipping...`, "stdout");
-            return { completed: true, data: stepCache.data };
-        }
-
-        return { completed: false };
-    }
-
-    async completeStep(blockId: string, stepId: string, data?: any): Promise<void> {
-        await this.completeStepWithFiles(blockId, stepId, data);
-    }
-
-    async failStep(blockId: string, stepId: string, error: string): Promise<void> {
-        if (!this.state.blocks[blockId]) {
-            return;
-        }
-
-        this.state.blocks[blockId].steps[stepId] = {
-            stepId,
-            status: CacheStatus.FAILED,
-            data: { error },
-            timestamp: Date.now()
-        };
-
-        await this.saveState();
-        this.context.reportLog(`✗ Step ${stepId} failed: ${error}`, "stderr");
-    }
-
-    async updateBlockProgress(blockId: string, progress: number, resumeData?: any): Promise<void> {
-        if (this.state.blocks[blockId]) {
-            this.state.blocks[blockId].progress = Math.min(100, Math.max(0, progress));
-            this.state.blocks[blockId].status = CacheStatus.IN_PROGRESS;
-
-            if (resumeData) {
-                this.state.blocks[blockId].resumeData = resumeData;
-            }
-
-            await this.saveState();
-        }
-    }
-
-    async completeBlock(blockId: string, outputs: any): Promise<void> {
-        this.context.reportLog(`🔧 Instance #${this.instanceId} completing block: ${blockId}`, "stdout");
-
-        if (this.state.blocks[blockId]) {
-            this.state.blocks[blockId].status = CacheStatus.COMPLETED;
-            this.state.blocks[blockId].progress = 100;
-            this.state.blocks[blockId].endTime = Date.now();
-            this.state.blocks[blockId].outputs = outputs;
-            this.state.blocks[blockId].error = undefined;
-            this.state.blocks[blockId].resumeData = undefined;
-
-            // 自动收集所有步骤中的文件ID
-            const allFileIds = new Set<string>();
-
-            // 添加现有的块级别文件ID
-            if (this.state.blocks[blockId].fileIds) {
-                this.state.blocks[blockId].fileIds.forEach(id => allFileIds.add(id));
-            }
-
-            // 添加所有步骤中的文件ID
-            Object.values(this.state.blocks[blockId].steps).forEach(step => {
-                if (step.fileIds) {
-                    step.fileIds.forEach(id => allFileIds.add(id));
-                }
-            });
-
-            // 更新块的文件ID列表（去重）
-            this.state.blocks[blockId].fileIds = Array.from(allFileIds);
-
-            await this.saveState();
-            this.context.reportLog(`✓ Block ${blockId} completed with ${allFileIds.size} total files`, "stdout");
-            this.context.reportLog(`🔧 Instance #${this.instanceId} completed block ${blockId}`, "stdout");
-        } else {
-            this.context.reportLog(`❌ Instance #${this.instanceId} - Block ${blockId} not found when completing!`, "stderr");
-        }
-    }
-
-    async failBlock(blockId: string, error: string): Promise<void> {
-        if (this.state.blocks[blockId]) {
-            this.state.blocks[blockId].status = CacheStatus.FAILED;
-            this.state.blocks[blockId].error = error;
-            this.state.blocks[blockId].endTime = Date.now();
-
-            await this.saveState();
-            this.context.reportLog(`✗ Block ${blockId} failed: ${error}`, "stderr");
-        }
-    }
-
-    private async invalidateBlock(blockId: string): Promise<void> {
-        const blockCache = this.state.blocks[blockId];
-        if (!blockCache) {
-            return;
-        }
-
-        // 收集所有相关文件ID
-        const allFileIds = new Set<string>();
-
-        // 块级别的文件
-        if (blockCache.fileIds) {
-            blockCache.fileIds.forEach(id => allFileIds.add(id));
-        }
-
-        // 步骤级别的文件
-        Object.values(blockCache.steps).forEach(step => {
-            if (step.fileIds) {
-                step.fileIds.forEach(id => allFileIds.add(id));
-            }
-        });
-
-        // 清理文件
-        if (allFileIds.size > 0) {
-            this.context.reportLog(`Cleaning up ${allFileIds.size} files for block ${blockId}`, "stdout");
-            this.emit('cache:block:invalidated', { blockId, fileIds: Array.from(allFileIds) });
-        }
-
-        // 清理缓存
-        delete this.state.blocks[blockId];
-        await this.saveState();
-
-        this.context.reportLog(`Invalidated cache and files for block ${blockId}`, "stdout");
-    }
-
-    private async loadState(): Promise<void> {
-        try {
-            const stateContent = await fs.readFile(this.stateFile, 'utf-8');
-            const loadedState = JSON.parse(stateContent);
-
-            this.state = loadedState;
-            this.context.reportLog(`Loaded cache state with ${Object.keys(this.state.blocks).length} blocks`, "stdout");
-        } catch {
-            this.context.reportLog("No existing cache found, starting fresh", "stdout");
-        }
-    }
-
-    private async saveState(): Promise<void> {
-        this.isStateDirty = true;
-
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-
-        // 延迟批量保存（避免频繁写入）
-        this.saveTimeout = setTimeout(() => {
-            this.performSave();
-        }, 50); // 50ms 延迟
-    }
-
-    private async performSave(): Promise<void> {
-        if (!this.isStateDirty) {
-            return;
-        }
-
-        // 排队执行，确保串行写入
-        this.saveQueue = this.saveQueue.then(async () => {
-            if (!this.isStateDirty) {
-                return;
-            }
-
-            try {
-                this.state.lastUpdated = Date.now();
-                const stateContent = JSON.stringify(this.state, null, 2);
-
-                // 原子写入：先写入临时文件，再重命名
-                const tempFile = `${this.stateFile}.tmp.${Date.now()}.${Math.random().toString(36).substr(2, 5)}`;
-                await fs.writeFile(tempFile, stateContent, 'utf-8');
-                await fs.rename(tempFile, this.stateFile);
-
-                this.isStateDirty = false;
-                this.context.reportLog(`✓ Cache state saved (${stateContent.length} bytes)`, "stdout");
-            } catch (error) {
-                this.context.reportLog(`Failed to save cache state: ${error}`, "stderr");
-                // 重新标记为脏，稍后重试
-                setTimeout(() => this.performSave(), 1000);
-            }
-        });
-
-        return this.saveQueue;
-    }
-
-    private async ensureDirectory(dir: string): Promise<void> {
-        try {
-            await fs.mkdir(dir, { recursive: true });
-        } catch (error) {
-            throw new Error(`Failed to create directory ${dir}: ${error}`);
-        }
-    }
-
-    /**
-     * 获取整个工作流的状态概览
-     */
-    getWorkflowStatus(): {
-        totalBlocks: number;
-        completedBlocks: number;
-        failedBlocks: number;
-        inProgressBlocks: number;
-        overallProgress: number;
-    } {
-        const blocks = Object.values(this.state.blocks);
-        const totalBlocks = blocks.length;
-        const completedBlocks = blocks.filter(b => b.status === CacheStatus.COMPLETED).length;
-        const failedBlocks = blocks.filter(b => b.status === CacheStatus.FAILED).length;
-        const inProgressBlocks = blocks.filter(b => b.status === CacheStatus.IN_PROGRESS).length;
-
-        const overallProgress = totalBlocks > 0
-            ? Math.round(blocks.reduce((sum, block) => sum + block.progress, 0) / totalBlocks)
-            : 0;
-
-        return {
-            totalBlocks,
-            completedBlocks,
-            failedBlocks,
-            inProgressBlocks,
-            overallProgress
-        };
-    }
-
-    async clearCache(): Promise<void> {
-        try {
-            // 收集所有文件ID
-            const allFileIds = new Set<string>();
-
-            Object.values(this.state.blocks).forEach(block => {
-                if (block.fileIds) {
-                    block.fileIds.forEach(id => allFileIds.add(id));
-                }
-                Object.values(block.steps).forEach(step => {
-                    if (step.fileIds) {
-                        step.fileIds.forEach(id => allFileIds.add(id));
-                    }
-                });
-            });
-
-            // 发布清理事件
-            if (allFileIds.size > 0) {
-                this.context.reportLog(`Publishing cache clear event: ${allFileIds.size} files`, "stdout");
-                this.emit('cache:cleared', { fileIds: Array.from(allFileIds) });
-            }
-
-            // 清理缓存目录
-            await fs.rm(this.cacheDir, { recursive: true, force: true });
-            this.state = {
-                blocks: {},
-                lastUpdated: Date.now()
-            };
-
-            this.context.reportLog("Cache cleared successfully", "stdout");
-        } catch (error) {
-            this.context.reportLog(`Failed to clear cache: ${error}`, "stderr");
-        }
-    }
-
-    async shutdown(): Promise<void> {
-        if (this.saveTimeout) {
-            clearTimeout(this.saveTimeout);
-        }
-
-        if (this.isStateDirty) {
-            await this.performSave();
-        }
-
-        await this.saveQueue;
-    }
 }
 
 export function withCache<TInputs, TOutputs>(
@@ -509,27 +397,26 @@ export function withCache<TInputs, TOutputs>(
     blockFunction: (params: TInputs, context: Context<TInputs, TOutputs>, cacheManager: CacheManager, resumeData?: any) => Promise<TOutputs>
 ) {
     return async (params: TInputs, context: Context<TInputs, TOutputs>): Promise<TOutputs> => {
-        // 使用单例模式获取缓存管理器
-        const cacheManager = CacheManager.getInstance(context);
+        const cacheManager = new CacheManager(context, blockId);
         await cacheManager.initialize();
 
         try {
             // 检查是否可以跳过整个block
-            const cacheResult = await cacheManager.canSkipBlock(blockId, params);
+            const cacheResult = await cacheManager.canSkipBlock(params);
 
             // 如果可以跳过，则返回缓存结果
             if (cacheResult.canSkip && cacheResult.outputs) {
                 return cacheResult.outputs;
             }
 
-            await cacheManager.startBlock(blockId, params, cacheResult.resumeData);
+            await cacheManager.startBlock(params, cacheResult.resumeData);
 
             const result = await blockFunction(params, context, cacheManager, cacheResult.resumeData);
 
-            await cacheManager.completeBlock(blockId, result);
+            await cacheManager.completeBlock(result);
             return result;
         } catch (error) {
-            await cacheManager.failBlock(blockId, error.message || String(error));
+            await cacheManager.failBlock(error.message || String(error));
             throw error;
         }
     };
@@ -548,7 +435,7 @@ export class StepCache {
         stepFunction: () => Promise<T>,
         description?: string
     ): Promise<T> {
-        const stepResult = await this.cacheManager.isStepCompleted(this.blockId, stepId);
+        const stepResult = await this.cacheManager.isStepCompleted(stepId);
         if (stepResult.completed) {
             return stepResult.data;
         }
@@ -559,10 +446,10 @@ export class StepCache {
             }
 
             const result = await stepFunction();
-            await this.cacheManager.completeStep(this.blockId, stepId, result);
+            await this.cacheManager.completeStep(stepId, result);
             return result;
         } catch (error) {
-            await this.cacheManager.failStep(this.blockId, stepId, error.message || String(error));
+            await this.cacheManager.failStep(stepId, error.message || String(error));
             throw error;
         }
     }
@@ -572,7 +459,7 @@ export class StepCache {
         stepFunction: () => Promise<{ result: T, fileIds: string[] }>,
         description?: string
     ): Promise<T> {
-        const stepResult = await this.cacheManager.isStepCompleted(this.blockId, stepId);
+        const stepResult = await this.cacheManager.isStepCompleted(stepId);
         if (stepResult.completed) {
             return stepResult.data.result;
         }
@@ -585,7 +472,6 @@ export class StepCache {
             const { result, fileIds } = await stepFunction();
 
             await this.cacheManager.completeStepWithFiles(
-                this.blockId,
                 stepId,
                 { result, fileIds },
                 fileIds
@@ -593,7 +479,7 @@ export class StepCache {
 
             return result;
         } catch (error) {
-            await this.cacheManager.failStep(this.blockId, stepId, error.message || String(error));
+            await this.cacheManager.failStep(stepId, error.message || String(error));
             throw error;
         }
     }

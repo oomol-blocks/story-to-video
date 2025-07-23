@@ -1,5 +1,5 @@
 import type { Context } from "@oomol/types/oocana";
-import { ScriptParser, ScriptParserInputs, ScriptParserOutputs } from "~/utils/ScriptParser";
+import { ScriptParser, ScriptParserInputs, ScriptParserOutputs } from "~/core/ScriptParser";
 
 export default async function (
     params: ScriptParserInputs,

@@ -1,65 +1,45 @@
 import type { Context } from "@oomol/types/oocana";
 import path from "path";
 
-import { SourceItem, VideoProcessor, VideoProcessorInputs, VideoProcessorOutputs } from "~/utils/VideoProcessor";
-import { VideoAsset } from "~/utils/VideoGenerator";
+import { SourceItem, VideoProcessor, VideoProcessorInputs, VideoProcessorOutputs } from "~/core/VideoProcessor";
+import { VideoAsset } from "~/core/VideoGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
-import { createdManagers, VideoFileManager } from "~/file";
+import { VideoFileManager } from "~/file";
 import { FileManager, FileStatus } from "~/file/FileManager";
-
-export async function createCachedVideoProcessor(
-    context: Context<VideoProcessorInputs, VideoProcessorOutputs>,
-    blockId: string
-): Promise<{ processor: CachedVideoProcessor, cleanup: () => Promise<void> }> {
-    const cacheManager = CacheManager.getInstance(context);
-    const processor = new CachedVideoProcessor(context, cacheManager, blockId);
-
-    await processor.initialize();
-
-    return {
-        processor,
-        cleanup: async () => {
-            await processor.destroy();
-        }
-    };
-}
 
 export class CachedVideoProcessor {
     private stepCache: StepCache;
     private processor: VideoProcessor;
     private videoFileManager: VideoFileManager;
     private fileManager: FileManager;
-    private cleanup?: () => Promise<void>;
-    private isInitialized = false;
+    private initPromise: Promise<void>;
 
     constructor(
         private context: Context<VideoProcessorInputs, VideoProcessorOutputs>,
         private cacheManager: CacheManager,
-        private BLOCK_ID: string
+        BLOCK_ID: string
     ) {
         this.stepCache = new StepCache(cacheManager, BLOCK_ID, context);
         this.processor = new VideoProcessor(context);
+
+        this.initPromise = this.doInitialize();
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
+    private async doInitialize(): Promise<void> {
         try {
-            const managers = await createdManagers(this.context);
-            this.fileManager = managers.fileManager;
-            this.cleanup = managers.cleanup;
+            this.fileManager = new FileManager(this.context, this.cacheManager);
+            await this.fileManager.initialize();
+
             this.videoFileManager = new VideoFileManager(this.fileManager);
-            this.isInitialized = true;
         } catch (error) {
             throw new Error(`Failed to initialize CachedVideoProcessor: ${error.message}`);
         }
     }
 
-    private ensureInitialized(): void {
-        if (!this.isInitialized || !this.fileManager || !this.videoFileManager) {
-            throw new Error('CachedVideoProcessor not initialized. Call initialize() first.');
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
+        if (!this.fileManager || !this.videoFileManager) {
+            throw new Error('CachedVideoProcessor initialization failed');
         }
     }
 
@@ -71,7 +51,7 @@ export class CachedVideoProcessor {
         sources: SourceItem[],
         resumeData?: any
     ): Promise<VideoProcessorOutputs> {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         this.context.reportLog('Processing video sources with audio and subtitles...', "stdout");
 
         const state = this.initializeProcessingState(params.videoAssets, resumeData);
@@ -85,7 +65,7 @@ export class CachedVideoProcessor {
 
             return this.buildResult(state, mergedVideoAsset);
         } catch (error) {
-            await this.cacheManager.updateBlockProgress(this.BLOCK_ID, (state.startIndex / params.videoAssets.length) * 100, {
+            await this.cacheManager.updateProgress((state.startIndex / params.videoAssets.length) * 100, {
                 processedVideoAssets: state.processedVideoAssets,
                 currentSourceIndex: state.startIndex,
                 error: error.message
@@ -222,7 +202,7 @@ export class CachedVideoProcessor {
     private async saveProcessingProgress(completed: number, total: number, state: any, maxProgress: number = 100) {
         const progress = (completed / total) * maxProgress;
 
-        await this.cacheManager.updateBlockProgress(this.BLOCK_ID, progress, {
+        await this.cacheManager.updateProgress(progress, {
             processedVideoAssets: [...state.processedVideoAssets],
             currentSourceIndex: completed
         });
@@ -239,9 +219,9 @@ export class CachedVideoProcessor {
     }
 
     async destroy(): Promise<void> {
-        if (this.cleanup) {
-            await this.cleanup();
-            this.context.reportLog("CachedVideoProcessor destroyed", "stdout");
+        await this.initPromise;
+        if (this.fileManager) {
+            await this.fileManager.destroy();
         }
     }
 }

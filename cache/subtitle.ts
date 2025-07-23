@@ -1,65 +1,45 @@
 import type { Context } from "@oomol/types/oocana";
 import path from "path";
 
-import { SubtitleGenerator, SubtitleGeneratorInputs, SubtitleGeneratorOutputs } from "~/utils/SubtitleGenerator";
+import { SubtitleGenerator, SubtitleGeneratorInputs, SubtitleGeneratorOutputs } from "~/core/SubtitleGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
-import { createdManagers, SubtitleFileManager } from "~/file";
+import { SubtitleFileManager } from "~/file";
 import { FileManager, FileStatus } from "~/file/FileManager";
 import { SubtitleConfig } from "~/utils/constants";
-
-export async function createCachedSubtitleGenerator(
-    context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>,
-    blockId: string
-): Promise<{ generator: CachedSubtitleGenerator, cleanup: () => Promise<void> }> {
-    const cacheManager = CacheManager.getInstance(context);
-    const generator = new CachedSubtitleGenerator(context, cacheManager, blockId);
-
-    await generator.initialize();
-
-    return {
-        generator,
-        cleanup: async () => {
-            await generator.destroy();
-        }
-    };
-}
 
 export class CachedSubtitleGenerator {
     private stepCache: StepCache;
     private generator: SubtitleGenerator;
     private subtitleFileManager: SubtitleFileManager;
     private fileManager: FileManager;
-    private cleanup?: () => Promise<void>;
-    private isInitialized = false;
+    private initPromise: Promise<void>;
 
     constructor(
         private context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>,
         private cacheManager: CacheManager,
-        private BLOCK_ID: string
+        BLOCK_ID: string
     ) {
         this.stepCache = new StepCache(cacheManager, BLOCK_ID, context);
         this.generator = new SubtitleGenerator(context);
+
+        this.initPromise = this.doInitialize();
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
+    private async doInitialize(): Promise<void> {
         try {
-            const managers = await createdManagers(this.context);
-            this.fileManager = managers.fileManager;
-            this.cleanup = managers.cleanup;
+            this.fileManager = new FileManager(this.context, this.cacheManager);
+            await this.fileManager.initialize();
+
             this.subtitleFileManager = new SubtitleFileManager(this.fileManager);
-            this.isInitialized = true;
         } catch (error) {
             throw new Error(`Failed to initialize CachedSubtitleGenerator: ${error.message}`);
         }
     }
 
-    private ensureInitialized(): void {
-        if (!this.isInitialized || !this.fileManager || !this.subtitleFileManager) {
-            throw new Error('CachedSubtitleGenerator not initialized. Call initialize() first.');
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
+        if (!this.fileManager || !this.subtitleFileManager) {
+            throw new Error('CachedSubtitleGenerator initialization failed');
         }
     }
 
@@ -71,7 +51,7 @@ export class CachedSubtitleGenerator {
         config: SubtitleConfig,
         resumeData?: any
     ): Promise<SubtitleGeneratorOutputs> {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         this.context.reportLog('Generating subtitles...', "stdout");
 
         // 初始化状态
@@ -193,7 +173,7 @@ export class CachedSubtitleGenerator {
     private async saveProgress(completed: number, total: number, state: any) {
         const progress = (completed / total) * 100;
 
-        await this.cacheManager.updateBlockProgress(this.BLOCK_ID, progress, {
+        await this.cacheManager.updateProgress(progress, {
             completedCount: completed,
             subtitleAssets: [...state.subtitleAssets]
         });
@@ -216,9 +196,9 @@ export class CachedSubtitleGenerator {
     }
 
     async destroy(): Promise<void> {
-        if (this.cleanup) {
-            await this.cleanup();
-            this.context.reportLog("CachedSubtitleGenerator destroyed", "stdout");
+        await this.initPromise;
+        if (this.fileManager) {
+            await this.fileManager.destroy();
         }
     }
 }

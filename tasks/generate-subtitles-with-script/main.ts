@@ -1,8 +1,8 @@
 import type { Context } from "@oomol/types/oocana";
 import { SubtitleConfig } from "~/utils/constants";
-import { SubtitleGeneratorInputs, SubtitleGeneratorOutputs } from "~/utils/SubtitleGenerator";
-import { withCache } from "~/cache/CacheManager";
-import { createCachedSubtitleGenerator } from "~/cache/subtitle";
+import { SubtitleGeneratorInputs, SubtitleGeneratorOutputs } from "~/core/SubtitleGenerator";
+import { CacheManager, withCache } from "~/cache/CacheManager";
+import { CachedSubtitleGenerator } from "~/cache/subtitle";
 
 const BLOCK_ID = "generate-subtitles";
 
@@ -11,6 +11,7 @@ const generateSubtitlesWithCache = withCache(
     async (
         params: SubtitleGeneratorInputs,
         context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>,
+        cacheManager: CacheManager,
         resumeData?: any
     ): Promise<SubtitleGeneratorOutputs> => {
         const config: SubtitleConfig = {
@@ -21,13 +22,8 @@ const generateSubtitlesWithCache = withCache(
             format: "ass"
         };
 
-        const { generator, cleanup } = await createCachedSubtitleGenerator(context, BLOCK_ID);
-
-        try {
-            return await generator.generateSubtitles(params, config, resumeData);
-        } finally {
-            // await cleanup(); // Commented out to avoid premature cleanup
-        }
+        const generator = new CachedSubtitleGenerator(context, cacheManager, BLOCK_ID);
+        return await generator.generateSubtitles(params, config, resumeData);
     }
 );
 

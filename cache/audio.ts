@@ -1,65 +1,44 @@
 import type { Context } from "@oomol/types/oocana";
 import path from "path";
 
-import { AudioGenerator, AudioGeneratorInputs, AudioGeneratorOutputs } from "~/utils/AudioGenerator";
+import { AudioGenerator, AudioGeneratorInputs, AudioGeneratorOutputs } from "~/core/AudioGenerator";
 import { CacheManager, StepCache } from "~/cache/CacheManager";
-import { AudioFileManager, createdManagers } from "~/file";
+import { AudioFileManager } from "~/file";
 import { FileManager, FileStatus } from "~/file/FileManager";
-
-// 创建音频生成器
-export async function createCachedAudioGenerator(
-    context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>,
-    blockId: string
-): Promise<{ generator: CachedAudioGenerator, cleanup: () => Promise<void> }> {
-    const cacheManager = CacheManager.getInstance(context);
-    const generator = new CachedAudioGenerator(context, cacheManager, blockId);
-
-    await generator.initialize();
-
-    return {
-        generator,
-        cleanup: async () => {
-            await generator.destroy();
-        }
-    };
-}
 
 export class CachedAudioGenerator {
     private stepCache: StepCache;
     private generator: AudioGenerator;
     private audioFileManager: AudioFileManager;
     private fileManager: FileManager;
-    private cleanup?: () => Promise<void>;
-    private isInitialized = false;
+    private initPromise: Promise<void>;
 
     constructor(
         private context: Context<AudioGeneratorInputs, AudioGeneratorOutputs>,
         private cacheManager: CacheManager,
-        private BLOCK_ID: string
+        BLOCK_ID: string
     ) {
         this.stepCache = new StepCache(cacheManager, BLOCK_ID, context);
         this.generator = new AudioGenerator(context);
+
+        this.initPromise = this.doInitialize();
     }
 
-    async initialize(): Promise<void> {
-        if (this.isInitialized) {
-            return;
-        }
-
+    private async doInitialize(): Promise<void> {
         try {
-            const managers = await createdManagers(this.context);
-            this.fileManager = managers.fileManager;
-            this.cleanup = managers.cleanup;
+            this.fileManager = new FileManager(this.context, this.cacheManager);
+            await this.fileManager.initialize();
+
             this.audioFileManager = new AudioFileManager(this.fileManager);
-            this.isInitialized = true;
         } catch (error) {
             throw new Error(`Failed to initialize CachedAudioGenerator: ${error.message}`);
         }
     }
 
-    private ensureInitialized(): void {
-        if (!this.isInitialized || !this.fileManager || !this.audioFileManager) {
-            throw new Error('CachedAudioGenerator not initialized. Call initialize() first.');
+    private async ensureInitialized(): Promise<void> {
+        await this.initPromise;
+        if (!this.fileManager || !this.audioFileManager) {
+            throw new Error('CachedAudioGenerator initialization failed');
         }
     }
 
@@ -67,7 +46,7 @@ export class CachedAudioGenerator {
      * 生成音频，判断是否可以恢复
      */
     async generateAudio(params: AudioGeneratorInputs, resumeData?: any): Promise<AudioGeneratorOutputs> {
-        this.ensureInitialized();
+        await this.ensureInitialized();
         this.context.reportLog('Generating audio files...', "stdout");
 
         // 初始化状态
@@ -81,7 +60,7 @@ export class CachedAudioGenerator {
             return this.buildResult(state);
         } catch (error) {
             // 保存当前状态
-            await this.cacheManager.updateBlockProgress(this.BLOCK_ID, (state.startIndex / params.texts.length) * 80, {
+            await this.cacheManager.updateProgress((state.startIndex / params.texts.length) * 80, {
                 audioAssets: state.audioAssets,
                 currentSegmentIndex: state.startIndex,
                 error: error.message
@@ -182,8 +161,6 @@ export class CachedAudioGenerator {
                         startTime
                     );
 
-                    console.log("tempAudioAsset: ", tempAudioAsset)
-
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.COMPLETED);
 
                     return {
@@ -205,7 +182,7 @@ export class CachedAudioGenerator {
     private async saveProgress(completed: number, total: number, state: any) {
         const progress = (completed / total) * 100;
 
-        await this.cacheManager.updateBlockProgress(this.BLOCK_ID, progress, {
+        await this.cacheManager.updateProgress(progress, {
             completedCount: completed,
             audioAssets: [...state.audioAssets],
             currentStartTime: state.currentStartTime
@@ -221,9 +198,9 @@ export class CachedAudioGenerator {
     }
 
     async destroy(): Promise<void> {
-        if (this.cleanup) {
-            await this.cleanup();
-            this.context.reportLog("CachedAudioGenerator destroyed", "stdout");
+        await this.initPromise;
+        if (this.fileManager) {
+            await this.fileManager.destroy();
         }
     }
 }

@@ -46,8 +46,19 @@ export class CacheManager extends EventEmitter {
     private isInitialized = false;
     private static instance: CacheManager | null = null;
 
+    // TODO:
+    private saveQueue: Promise<void> = Promise.resolve();
+    private isStateDirty = false;
+    private saveTimeout: NodeJS.Timeout | null = null;
+
+    private static instanceCount = 0;
+    private instanceId: number;
+
     constructor(private context: Context<any, any>) {
         super();
+        this.instanceId = ++CacheManager.instanceCount;
+        this.context.reportLog(`🔧 CacheManager instance #${this.instanceId} created`, "stdout");
+
         this.cacheDir = path.join(context.pkgDir, 'workflow-cache');
         this.stateFile = path.join(this.cacheDir, 'workflow-state.json');
         this.state = {
@@ -62,6 +73,9 @@ export class CacheManager extends EventEmitter {
     static getInstance(context: Context<any, any>): CacheManager {
         if (!CacheManager.instance) {
             CacheManager.instance = new CacheManager(context);
+            context.reportLog(`🔧 Created new CacheManager singleton instance`, "stdout");
+        } else {
+            context.reportLog(`🔧 Using existing CacheManager singleton instance`, "stdout");
         }
         return CacheManager.instance;
     }
@@ -166,9 +180,9 @@ export class CacheManager extends EventEmitter {
         return { canSkip: false };
     }
 
-
-
     async startBlock(blockId: string, inputs: any, resumeData?: any): Promise<void> {
+        this.context.reportLog(`🔧 Instance #${this.instanceId} starting block: ${blockId}`, "stdout");
+
         const inputHash = this.calculateInputHash(inputs);
 
         if (this.state.blocks[blockId] && this.state.blocks[blockId].inputHash === inputHash) {
@@ -190,6 +204,7 @@ export class CacheManager extends EventEmitter {
 
         await this.saveState();
         this.context.reportLog(`Started block ${blockId}`, "stdout");
+        this.context.reportLog(`🔧 Instance #${this.instanceId} started block ${blockId}`, "stdout");
     }
 
     async completeStepWithFiles(blockId: string, stepId: string, data?: any, fileIds?: string[]): Promise<void> {
@@ -266,6 +281,8 @@ export class CacheManager extends EventEmitter {
     }
 
     async completeBlock(blockId: string, outputs: any): Promise<void> {
+        this.context.reportLog(`🔧 Instance #${this.instanceId} completing block: ${blockId}`, "stdout");
+
         if (this.state.blocks[blockId]) {
             this.state.blocks[blockId].status = CacheStatus.COMPLETED;
             this.state.blocks[blockId].progress = 100;
@@ -294,6 +311,9 @@ export class CacheManager extends EventEmitter {
 
             await this.saveState();
             this.context.reportLog(`✓ Block ${blockId} completed with ${allFileIds.size} total files`, "stdout");
+            this.context.reportLog(`🔧 Instance #${this.instanceId} completed block ${blockId}`, "stdout");
+        } else {
+            this.context.reportLog(`❌ Instance #${this.instanceId} - Block ${blockId} not found when completing!`, "stderr");
         }
     }
 
@@ -342,41 +362,6 @@ export class CacheManager extends EventEmitter {
         this.context.reportLog(`Invalidated cache and files for block ${blockId}`, "stdout");
     }
 
-    async clearCache(): Promise<void> {
-        try {
-            // 收集所有文件ID
-            const allFileIds = new Set<string>();
-
-            Object.values(this.state.blocks).forEach(block => {
-                if (block.fileIds) {
-                    block.fileIds.forEach(id => allFileIds.add(id));
-                }
-                Object.values(block.steps).forEach(step => {
-                    if (step.fileIds) {
-                        step.fileIds.forEach(id => allFileIds.add(id));
-                    }
-                });
-            });
-
-            // 发布清理事件
-            if (allFileIds.size > 0) {
-                this.context.reportLog(`Publishing cache clear event: ${allFileIds.size} files`, "stdout");
-                this.emit('cache:cleared', { fileIds: Array.from(allFileIds) });
-            }
-
-            // 清理缓存目录
-            await fs.rm(this.cacheDir, { recursive: true, force: true });
-            this.state = {
-                blocks: {},
-                lastUpdated: Date.now()
-            };
-
-            this.context.reportLog("Cache cleared successfully", "stdout");
-        } catch (error) {
-            this.context.reportLog(`Failed to clear cache: ${error}`, "stderr");
-        }
-    }
-
     private async loadState(): Promise<void> {
         try {
             const stateContent = await fs.readFile(this.stateFile, 'utf-8');
@@ -390,13 +375,48 @@ export class CacheManager extends EventEmitter {
     }
 
     private async saveState(): Promise<void> {
-        try {
-            this.state.lastUpdated = Date.now();
-            const stateContent = JSON.stringify(this.state, null, 2);
-            await fs.writeFile(this.stateFile, stateContent, 'utf-8');
-        } catch (error) {
-            this.context.reportLog(`Failed to save cache state: ${error}`, "stderr");
+        this.isStateDirty = true;
+
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
         }
+
+        // 延迟批量保存（避免频繁写入）
+        this.saveTimeout = setTimeout(() => {
+            this.performSave();
+        }, 50); // 50ms 延迟
+    }
+
+    private async performSave(): Promise<void> {
+        if (!this.isStateDirty) {
+            return;
+        }
+
+        // 排队执行，确保串行写入
+        this.saveQueue = this.saveQueue.then(async () => {
+            if (!this.isStateDirty) {
+                return;
+            }
+
+            try {
+                this.state.lastUpdated = Date.now();
+                const stateContent = JSON.stringify(this.state, null, 2);
+
+                // 原子写入：先写入临时文件，再重命名
+                const tempFile = `${this.stateFile}.tmp.${Date.now()}.${Math.random().toString(36).substr(2, 5)}`;
+                await fs.writeFile(tempFile, stateContent, 'utf-8');
+                await fs.rename(tempFile, this.stateFile);
+
+                this.isStateDirty = false;
+                this.context.reportLog(`✓ Cache state saved (${stateContent.length} bytes)`, "stdout");
+            } catch (error) {
+                this.context.reportLog(`Failed to save cache state: ${error}`, "stderr");
+                // 重新标记为脏，稍后重试
+                setTimeout(() => this.performSave(), 1000);
+            }
+        });
+
+        return this.saveQueue;
     }
 
     private async ensureDirectory(dir: string): Promise<void> {
@@ -434,6 +454,53 @@ export class CacheManager extends EventEmitter {
             inProgressBlocks,
             overallProgress
         };
+    }
+
+    async clearCache(): Promise<void> {
+        try {
+            // 收集所有文件ID
+            const allFileIds = new Set<string>();
+
+            Object.values(this.state.blocks).forEach(block => {
+                if (block.fileIds) {
+                    block.fileIds.forEach(id => allFileIds.add(id));
+                }
+                Object.values(block.steps).forEach(step => {
+                    if (step.fileIds) {
+                        step.fileIds.forEach(id => allFileIds.add(id));
+                    }
+                });
+            });
+
+            // 发布清理事件
+            if (allFileIds.size > 0) {
+                this.context.reportLog(`Publishing cache clear event: ${allFileIds.size} files`, "stdout");
+                this.emit('cache:cleared', { fileIds: Array.from(allFileIds) });
+            }
+
+            // 清理缓存目录
+            await fs.rm(this.cacheDir, { recursive: true, force: true });
+            this.state = {
+                blocks: {},
+                lastUpdated: Date.now()
+            };
+
+            this.context.reportLog("Cache cleared successfully", "stdout");
+        } catch (error) {
+            this.context.reportLog(`Failed to clear cache: ${error}`, "stderr");
+        }
+    }
+
+    async shutdown(): Promise<void> {
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+
+        if (this.isStateDirty) {
+            await this.performSave();
+        }
+
+        await this.saveQueue;
     }
 }
 

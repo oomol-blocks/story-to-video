@@ -130,7 +130,7 @@ export class CachedImageGenerator {
 
             return await this.stepCache.executeStep(
                 `image-${prompt.id}`,
-                () => this.generator.generateImage(prompt, params.config, filePath),
+                async () => await this.generator.generateImage(prompt, params.config, filePath),
                 `Generate image for prompt ${prompt.id}`
             );
         } else {
@@ -157,7 +157,7 @@ export class CachedImageGenerator {
                     // 更新状态为处理
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.PROCESSING);
 
-                    const imageAsset = this.generator.generateImage(prompt, params.config, managedFile.tempPath)
+                    const imageAsset = await this.generator.generateImage(prompt, params.config, managedFile.tempPath)
 
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.COMPLETED);
 

@@ -139,7 +139,7 @@ export class CachedSubtitleGenerator {
             const filePath = path.join(params.outputDir, `subtitle_${text.id}.${config.format}`);
             return await this.stepCache.executeStep(
                 `subtitle-${text.id}`,
-                () => this.generator.generateSubtitle(text, config, filePath),
+                async () => await this.generator.generateSubtitle(text, config, filePath),
                 `Generate subtitle for text ${text.id}`
             );
         } else {

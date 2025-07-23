@@ -118,10 +118,12 @@ nodes:
               enum:
                 - FunAudioLLM/CosyVoice2-0.5B:alex
                 - alloy
+                - FunAudioLLM/CosyVoice2-0.5B:anna
               ui:options:
                 labels:
                   - OOMOL_FUN_AUDIO_ALEX
                   - GPT_ALLOY
+                  - OOMOL_FUN_AUDIO_ANNA
             apiKey:
               contentMediaType: oomol/secret
               type: string
@@ -134,7 +136,7 @@ nodes:
         value:
           apiEndpoint: https://console.oomol.com/v1/audio/speech
           model: FunAudioLLM/CosyVoice2-0.5B
-          voice: FunAudioLLM/CosyVoice2-0.5B:alex
+          voice: FunAudioLLM/CosyVoice2-0.5B:anna
           apiKey: ${{OO_SECRET:Custom,image_generator,image_generator}}
           format: mp3
       - handle: outputDir
@@ -163,13 +165,13 @@ nodes:
 
               要求如下：
 
-              1. 场景数量和时长：将内容拆分为5-7个关键场景，每个场景时长为5-10秒（整数）
+              1. 场景数量和时长：将内容拆分为1个关键场景，每个场景时长为1秒（整数）
 
               2. 每个场景包括：
                  - 描述：本段要解释的科学概念或现象
                  - 解说词：适合大众理解的科普内容，语言生动准确，字数根据时长调整（每秒约4-5字）
                  - 视觉提示：画面要素详细描述，便于生成科学插图，要求准确无误，避免科学错误和幻觉内容
-                 - 时长：5-10秒的整数（根据内容复杂度调整）
+                 - 时长：1秒的整数（根据内容复杂度调整）
 
               3. 科学准确性：严格遵循科学事实，避免以下问题：
                  - 夸大或虚假的数据
@@ -179,15 +181,6 @@ nodes:
 
               4. 视觉一致性：所有人物特征描述必须包含完整的三视图特征，确保视觉一致性
 
-              5. 时长分配原则：
-                 - 简单概念介绍：5秒
-                 - 复杂过程展示：6-8秒
-                 - 重要结论阐述：9-10秒
-
-              时长参考：
-              - 5秒：20-25字
-              - 8秒：32-40字
-              - 10秒：40-50字
 
               输出格式严格如下：
 
@@ -199,15 +192,7 @@ nodes:
               描述: [场景描述]
               解说词: [根据时长调整字数的科普解说]
               视觉提示: [详细准确的科学画面描述，强调人物与三视图特征完全一致]
-              时长: [5-10的整数]
-
-              场景2:
-              描述: [场景描述]
-              解说词: [根据时长调整字数的科普解说]
-              视觉提示: [详细准确的科学画面描述]
-              时长: [5-10的整数]
-
-              [场景N...，如需要]
+              时长: [1的整数]
 
 
               请基于输入的科学内容{{input}}生成准确的科普脚本。

@@ -73,11 +73,22 @@ export class CachedAudioGenerator {
         // 初始化状态
         const state = this.initializeState(params, resumeData);
 
-        // 生成剩余的音频
-        await this.generateRemainingAudio(params, state);
+        try {
+            // 生成剩余的音频
+            await this.generateRemainingAudio(params, state);
 
-        // 返回结果
-        return this.buildResult(state);
+            // 返回结果
+            return this.buildResult(state);
+        } catch (error) {
+            // 保存当前状态
+            await this.cacheManager.updateBlockProgress(this.BLOCK_ID, (state.startIndex / params.texts.length) * 80, {
+                audioAssets: state.audioAssets,
+                currentSegmentIndex: state.startIndex,
+                error: error.message
+            });
+
+            throw error;
+        }
     }
 
     /**
@@ -133,10 +144,9 @@ export class CachedAudioGenerator {
         // 如果指定输出目录，则直接在指定目录中生成资源
         if (params.outputDir) {
             const filePath = path.join(params.outputDir, 'audio', `${text.id}.${params.config.format}`);
-
             return await this.stepCache.executeStep(
                 `audio-${text.id}`,
-                () => this.generator.generateAudio(text, params.config, filePath, startTime),
+                async () => await this.generator.generateAudio(text, params.config, filePath, startTime),
                 `Generate audio for text ${text.id}`
             );
         } else {
@@ -171,6 +181,8 @@ export class CachedAudioGenerator {
                         managedFile.tempPath!,
                         startTime
                     );
+
+                    console.log("tempAudioAsset: ", tempAudioAsset)
 
                     await this.fileManager.updateFileStatus(managedFile.id, FileStatus.COMPLETED);
 

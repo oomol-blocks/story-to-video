@@ -143,13 +143,11 @@ export class CachedVideoGenerator {
 
             return await this.stepCache.executeStep(
                 `video-segment-${segment.id}`,
-                async () => {
-                    return await this.generator.generateVideoSegment(
-                        segment,
-                        params.config,
-                        tempPath
-                    );
-                },
+                async () => await this.generator.generateVideoSegment(
+                    segment,
+                    params.config,
+                    tempPath
+                ),
                 `Generate video segment ${segment.id}`
             );
         } else {

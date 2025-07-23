@@ -227,19 +227,19 @@
       "sections": {
         "subflowInput": {
           "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "sceneMetadata": {
-              "[]": true
-            },
-            "imageConfig": {
+            "audioConfig": {
               "[]": true
             },
             "videoConfig": {
               "[]": true
             },
-            "audioConfig": {
+            "imageConfig": {
+              "[]": true
+            },
+            "sceneMetadata": {
+              "[]": true
+            },
+            "scenes": {
               "[]": true
             }
           }

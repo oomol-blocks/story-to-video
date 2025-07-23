@@ -143,14 +143,12 @@ export class CachedVideoProcessor {
 
             return await this.stepCache.executeStep(
                 `process-video-source-${source.id}`,
-                async () => {
-                    return await this.processor.processVideoSource(
-                        rawVideoAsset,
-                        source,
-                        params.config,
-                        outputPath
-                    )
-                },
+                async () => await this.processor.processVideoSource(
+                    rawVideoAsset,
+                    source,
+                    params.config,
+                    outputPath
+                ),
                 `Process video source ${source.id}`
             );
         } else {

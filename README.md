@@ -9,7 +9,7 @@
 
 - 🎬 **脚本解析**: 自动解析结构化文本脚本，提取场景信息
 - 🖼️ **AI 图像生成**: OOMOL AI 自动生成场景图像
-- 🎵 **AI 语音合成**: TTS 服务自动将解说词转换为高质量语音
+- 🎵 **AI 语音合成**: OOMOL AI 自动将解说词转换为高质量语音
 - 📝 **智能字幕**: 自动生成字幕
 - 🎥 **视频段生成**: 豆包 AI 将图像转换为视频
 - ⚡ **缓存机制**: 内置缓存系统，支持断点续传
@@ -28,20 +28,22 @@
 ### 核心逻辑结构
 
 ```
-utils/
+core/
 ├── ScriptParser.ts      # 脚本解析器
 ├── ImageGenerator.ts    # 图像生成器
 ├── AudioGenerator.ts    # 音频生成器
 ├── SubtitleGenerator.ts # 字幕生成器
 ├── VideoGenerator.ts    # 视频生成器
-├── FFmpegExecutor.ts    # FFmpeg 基础类
-└── constants.ts         # 类型定义和常量
+├── VideoProcessor.ts    # 资源合成器
+└── FFmpegExecutor.ts    # FFmpeg 基础类
 
-cache/
+cache/                   # 业务层缓存逻辑
 ├── CacheManager         # 基于文件的缓存管理中心
-├── image                # 图片缓存逻辑，业务层缓存逻辑
-├── audio                # 音频缓存逻辑，业务层缓存逻辑
-└── video                # 视频缓存逻辑，业务层缓存逻辑
+├── image                # 图片缓存逻辑
+├── audio                # 音频缓存逻辑
+├── subtitle             # 字幕缓存逻辑
+├── video                # 视频缓存逻辑
+└── processor            # 合并资源缓存逻辑
 
 file/
 ├── FileManager          # 临时文件管理中心
@@ -64,46 +66,41 @@ file/
 
 ```typescript
 const config = {
-  // 图像生成 API（OOMOL）
-  imageConfig: {
-    apiKey: "your-oomol-api-key",
-    apiEndpoint: "https://console.oomol.com/v1/images/generations",
-    model: "doubao-seedream-3-0-t2i-250415",
-    size: "720x1280"
-  },
-    
-  // 视频生成 API (豆包，Doubao-Seedance-1.0-lite-i2v 大模型)
-  videoConfig: {
-    apiKey: "your-doubao-api-key",
-    size: "1280x720",
-    format: "mp4"
-  },
-  
-  // 语音合成 API。当前使用 ohMyGPT tts-1 大模型
-  audioConfig: {
-    apiKey: "your-tts-api-key",
-    apiEndpoint: "https://cn2us02.opapi.win/v1/audio/speech",
-    model: "tts-1",
-    voice: "alloy"
-  }
+    // 图像生成 API（OOMOL）
+    imageConfig: {
+        apiKey: "your-oomol-api-key",
+        apiEndpoint: "https://console.oomol.com/v1/images/generations",
+        model: "doubao-seedream-3-0-t2i-250415"
+    },
+
+    // 图像生成 API（OOMOL）
+    audioConfig: {
+        apiKey: "your-oomol-api-key",
+        apiEndpoint: "https://console.oomol.com/v1/audio/speech",
+        model: "FunAudioLLM/CosyVoice2-0.5B"
+    },
+
+    // 视频生成 API (豆包，Doubao-Seedance-1.0-lite-i2v 大模型)
+    videoConfig: {
+        apiKey: "your-doubao-api-key"
+    }
 };
 ```
 
 ### API 服务申请
 
-#### OOMOL AI（图片生成）
+#### OOMOL AI（图片生成、音频生成）
 
 * `imageConfig.apiKey`: [API Key 生成地址](https://console.oomol.com/panel/api-key)
-* 模型：Doubao-Seedream-3.0-T2I
+  * 模型：Doubao-Seedream-3.0-T2I
+
+* `audioConfig.apiKey`: [API Key 生成地址](https://console.oomol.com/panel/api-key)
+  * 模型：FunAudioLLM/CosyVoice2-0.5B
 
 #### 豆包 AI（视频生成）
 
 * `videoConfig.apiKey`: [API Key 生成地址](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
 * 开通模型：[Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-
-#### ohMyGPT-TTS 服务（语音合成）
-
-* `audioConfig.apiKey`: [API Key 生成地址](https://www.ohmygpt.com/apis/keys)
 
 
 ## 🆘 支持

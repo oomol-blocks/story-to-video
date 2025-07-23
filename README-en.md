@@ -9,7 +9,7 @@ An intelligent video generation tool built on OOMOL Blocks, integrating multiple
 
 - 🎬 **Script Parsing**: Automatically parse structured text scripts and extract scene information
 - 🖼️ **AI Image Generation**: OOMOL AI automatically generates scene images
-- 🎵 **AI Speech Synthesis**: TTS service automatically converts narration to high-quality speech
+- 🎵 **AI Speech Synthesis**: OOMOL AI automatically converts narration to high-quality speech
 - 📝 **Intelligent Subtitles**: Automatically generate subtitles
 - 🎥 **Video Segment Generation**: Doubao AI converts images to videos
 - ⚡ **Caching Mechanism**: Built-in caching system with resume functionality
@@ -28,20 +28,22 @@ Text Script → Script Parsing → Image Generation → Audio Generation → Sub
 ### Core Logic Structure
 
 ```
-utils/
+core/
 ├── ScriptParser.ts      # Script parser
 ├── ImageGenerator.ts    # Image generator
 ├── AudioGenerator.ts    # Audio generator
 ├── SubtitleGenerator.ts # Subtitle generator
 ├── VideoGenerator.ts    # Video generator
-├── FFmpegExecutor.ts    # FFmpeg base class
-└── constants.ts         # Type definitions and constants
+├── VideoProcessor.ts    # Resource synthesizer
+└── FFmpegExecutor.ts    # FFmpeg base class
 
-cache/
+cache/                   # Business layer cache logic
 ├── CacheManager         # File-based cache management center
-├── image                # Image cache logic, business layer cache logic
-├── audio                # Audio cache logic, business layer cache logic
-└── video                # Video cache logic, business layer cache logic
+├── image                # Image cache logic
+├── audio                # Audio cache logic
+├── subtitle             # Subtitle cache logic
+├── video                # Video cache logic
+└── processor            # Resource merging cache logic
 
 file/
 ├── FileManager          # Temporary file management center
@@ -68,43 +70,36 @@ const config = {
   imageConfig: {
     apiKey: "your-oomol-api-key",
     apiEndpoint: "https://console.oomol.com/v1/images/generations",
-    model: "doubao-seedream-3-0-t2i-250415",
-    size: "720x1280"
+    model: "doubao-seedream-3-0-t2i-250415"
   },
     
-  // Video generation API (Doubao, Doubao-Seedance-1.0-lite-i2v model)
-  videoConfig: {
-    apiKey: "your-doubao-api-key",
-    size: "1280x720",
-    format: "mp4"
+  // Audio generation API (OOMOL)
+  audioConfig: {
+    apiKey: "your-oomol-api-key",
+    apiEndpoint: "https://console.oomol.com/v1/audio/speech",
+    model: "FunAudioLLM/CosyVoice2-0.5B"
   },
   
-  // Speech synthesis API. Currently using ohMyGPT tts-1 model
-  audioConfig: {
-    apiKey: "your-tts-api-key",
-    apiEndpoint: "https://cn2us02.opapi.win/v1/audio/speech",
-    model: "tts-1",
-    voice: "alloy"
+  // Video generation API (Doubao, Doubao-Seedance-1.0-lite-i2v model)
+  videoConfig: {
+    apiKey: "your-doubao-api-key"
   }
 };
 ```
 
 ### API Service Application
 
-#### OOMOL AI (Image Generation)
+#### OOMOL AI (Image Generation, Audio Generation)
 
 * `imageConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
-* Model: Doubao-Seedream-3.0-T2I
+  * Model: Doubao-Seedream-3.0-T2I
+* `audioConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
+  * Model: FunAudioLLM/CosyVoice2-0.5B
 
 #### Doubao AI (Video Generation)
 
 * `videoConfig.apiKey`: [API Key Generation URL](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
 * Enable Model: [Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
-
-#### ohMyGPT-TTS Service (Speech Synthesis)
-
-* `audioConfig.apiKey`: [API Key Generation URL](https://www.ohmygpt.com/apis/keys)
-
 
 ## 🆘 Support
 

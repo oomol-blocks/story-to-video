@@ -6,6 +6,13 @@ nodes:
         json_schema:
           type: string
           ui:widget: file
+      - handle: prompt
+        json_schema:
+          type: string
+          ui:widget: text
+        value: ""
+        description: 生成脚本内容的提示词。可以根据模版来进行修改。
+        nullable: false
       - handle: imageConfig
         json_schema:
           type: object
@@ -123,7 +130,6 @@ nodes:
         json_schema:
           type: string
           ui:widget: dir
-        value: /oomol-driver/oomol-storage/output4
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:
@@ -141,63 +147,25 @@ nodes:
         value:
           - role: system
             content: |-
-              你是一个专业的科学科普内容创作者，需要将科学知识改编为现代科普风格的视频解说脚本。
+              {{prompt}}
 
-              要求如下：
-
-              1. 场景数量和时长：将内容拆分为5-7个关键场景，每个场景时长为5-10秒（整数）
-              2. 每个场景包括：
-                 - 描述：本段要解释的科学概念或现象
-                 - 解说词：适合大众理解的科普内容，语言生动准确，字数根据时长调整（每秒约4-5字）
-                 - 视觉提示：画面要素详细描述，便于生成科学插图，要求准确无误，避免科学错误和幻觉内容
-                 - 时长：5-10秒的整数（根据内容复杂度调整）
-
-              3. 科学准确性：严格遵循科学事实，避免以下问题：
-                 - 夸大或虚假的数据
-                 - 不存在的科学理论
-                 - 错误的生物结构描述
-                 - 未经证实的研究结果
-
-              4. 视觉一致性：所有人物特征描述必须包含完整的三视图特征，确保视觉一致性
-
-              5. 时长分配原则：
-               - 简单概念介绍：5秒
-               - 复杂过程展示：6-8秒
-               - 重要结论阐述：9-10秒
-
-              时长参考：
-              - 5秒：20-25字
-              - 8秒：32-40字
-              - 10秒：40-50字
-
-
-              输出格式严格如下：
-
-              历史时期: [现代/21世纪科学时代]
-              人物特征: [人物名称：基础特征描述，正面特征（详细外貌、服装、表情），侧面特征（轮廓、角度特点），背面特征（服装背面、姿态）；如有多个人物用分号分隔]
-              基础画面风格: [现代科学插画风格描述，强调一致性和专业性]
-
-              场景1:
-              描述: [场景描述]
-              解说词: [根据时长调整字数的科普解说]
-              视觉提示: [详细准确的科学画面描述，强调人物与三视图特征完全一致]
-              时长: [5-10的整数]
-
-              场景2:
-              描述: [场景描述]
-              解说词: [根据时长调整字数的科普解说]
-              视觉提示: [详细准确的科学画面描述]
-              时长: [5-10的整数]
-
-              [场景N...，如需要]
-
-
-              请基于输入的科学内容{{input}}生成准确的科普脚本。
+              请基于输入的内容{{input}}生成准确的脚本。
         schema_overrides:
           - schema:
               type: array
+      - handle: prompt
+        value: ""
+        from_node:
+          - node_id: prompt_validator#1
+            output_handle: prompt
     task: llm::LLM
     ignore: false
+    inputs_def:
+      - handle: prompt
+        json_schema:
+          type: string
+          ui:widget: text
+        nullable: false
   - node_id: video_preview#1
     title: "Video preview #1"
     inputs_from:
@@ -279,4 +247,12 @@ nodes:
           - node_id: LLM#1
             output_handle: output
     ignore: false
+  - node_id: prompt_validator#1
+    task: self::prompt_validator
+    inputs_from:
+      - handle: prompt
+        value: ""
+        from_node:
+          - node_id: +value#2
+            output_handle: prompt
 title: converter

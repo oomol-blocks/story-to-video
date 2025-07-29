@@ -48,7 +48,7 @@ export class CacheManager extends EventEmitter {
     constructor(private context: Context<any, any>, private BLOCK_ID: string) {
         super();
 
-        this.cacheDir = path.join(context.pkgDir, 'workflow-cache');
+        this.cacheDir = path.join(context.pkgDataDir, 'workflow-cache');
         this.stateFile = path.join(this.cacheDir, `workflow-state-${BLOCK_ID}.json`);
 
         this.state = this.createDefaultState();

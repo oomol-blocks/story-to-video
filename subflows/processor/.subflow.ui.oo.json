@@ -1,42 +1,5 @@
 {
   "nodes": {
-    "+typescript#4": {
-      "contentWidth": 450,
-      "rfNode": {
-        "position": {
-          "x": 4714.618283350017,
-          "y": -278.0352419830413
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "assets": {
-              "[]": true
-            },
-            "imageAssets": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "videoAsset": {
-              "[]": true
-            },
-            "mergedVideoAsset": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
     "+typescript#6": {
       "contentWidth": 628.1942527632791,
       "rfNode": {
@@ -213,6 +176,15 @@
           "cardCollapsed": true
         }
       }
+    },
+    "generate-video-with-ai#1": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 4714.618283350017,
+          "y": -278.0352419830413
+        }
+      }
     }
   },
   "pseudoNodes": {
@@ -227,19 +199,19 @@
       "sections": {
         "subflowInput": {
           "collapsed": {
-            "audioConfig": {
-              "[]": true
-            },
-            "videoConfig": {
-              "[]": true
-            },
-            "imageConfig": {
+            "scenes": {
               "[]": true
             },
             "sceneMetadata": {
               "[]": true
             },
-            "scenes": {
+            "imageConfig": {
+              "[]": true
+            },
+            "videoConfig": {
+              "[]": true
+            },
+            "audioConfig": {
               "[]": true
             }
           }

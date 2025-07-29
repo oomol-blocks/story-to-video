@@ -1,0 +1,69 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: imageAssets
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+    nullable: false
+  - handle: config
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        apiEndpoint:
+          enum:
+            - https://ark.cn-beijing.volces.com/api/v3
+            - https://console.oomol.com/v1
+          ui:options:
+            labels:
+              - DOUBAO_VIDEO_BASE_URL
+              - OOMOL_DOUBAO
+        model:
+          enum:
+            - doubao-seedance-1-0-lite-i2v-250428
+          ui:options:
+            labels:
+              - DOUBAO_SEEDANCE
+        apiKey:
+          contentMediaType: oomol/secret
+          type: string
+        size:
+          enum:
+            - 1280x720
+            - 720x720
+            - 720x1280
+          ui:options:
+            labels:
+              - 1280x720（16:9 - 720p）
+              - 720x720（1:1 - 720p）
+              - 720x1280（9:16 - 720p）
+    nullable: false
+  - handle: durationList
+    description: Output
+    json_schema:
+      type: array
+      items:
+        type: object
+        additionalProperties: false
+    nullable: false
+  - handle: outputDir
+    json_schema:
+      type: string
+      ui:widget: dir
+    nullable: true
+outputs_def:
+  - handle: videoAssets
+    description: Output
+    json_schema:
+      type: array
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: Generate Video With AI
+icon: ":carbon:video-filled:"

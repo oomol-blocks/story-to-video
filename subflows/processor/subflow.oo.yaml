@@ -1,98 +1,4 @@
 nodes:
-  - node_id: +typescript#4
-    title: Generate Video With AI
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: outputDir
-        value:
-        from_flow:
-          []
-        from_node:
-          []
-      - handle: config
-        from_flow:
-          - input_handle: videoConfig
-      - handle: durationList
-        from_node:
-          - node_id: +typescript#2
-            output_handle: durationList
-      - handle: imageAssets
-        from_node:
-          - node_id: generate-images-with-ai#1
-            output_handle: imageAssets
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: imageAssets
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-          nullable: false
-        - handle: config
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              apiEndpoint:
-                enum:
-                  - https://ark.cn-beijing.volces.com/api/v3
-                ui:options:
-                  labels:
-                    - DOUBAO_VIDEO_BASE_URL
-              model:
-                enum:
-                  - doubao-seedance-1-0-lite-i2v-250428
-                ui:options:
-                  labels:
-                    - DOUBAO_SEEDANCE
-              apiKey:
-                contentMediaType: oomol/secret
-                type: string
-              format:
-                enum:
-                  - mp4
-                ui:options:
-                  labels:
-                    - MP4
-              size:
-                enum:
-                  - 1280x720
-                  - 720x720
-                  - 720x1280
-                ui:options:
-                  labels:
-                    - 1280x720（16:9 - 720p）
-                    - 720x720（1:1 - 720p）
-                    - 720x1280（9:16 - 720p）
-          nullable: false
-        - handle: durationList
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-          nullable: false
-        - handle: outputDir
-          json_schema:
-            type: string
-            ui:widget: dir
-          nullable: true
-      outputs_def:
-        - handle: videoAssets
-          description: Output
-          json_schema:
-            type: array
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#4.ts
-          spawn: false
-    ignore: false
   - node_id: +typescript#6
     title: "formatTranscript"
     icon: ":skill-icons:typescript:"
@@ -159,6 +65,7 @@ nodes:
         json_schema:
           type: array
         nullable: true
+    ignore: false
   - node_id: +typescript#7
     title: "parseTranscript"
     icon: ":skill-icons:typescript:"
@@ -200,6 +107,7 @@ nodes:
         from_node:
           - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
+    ignore: false
   - node_id: +typescript#5
     title: "parseToImage"
     icon: ":skill-icons:typescript:"
@@ -260,12 +168,6 @@ nodes:
               apiKey:
                 contentMediaType: oomol/secret
                 type: string
-              format:
-                enum:
-                  - png
-                ui:options:
-                  labels:
-                    - png
               size:
                 enum:
                   - 1024x1024
@@ -399,6 +301,7 @@ nodes:
         from_node:
           - node_id: +typescript#7
             output_handle: audioAssets
+    ignore: false
   - node_id: generate-images-with-ai#1
     task: self::generate-images-with-ai
     inputs_from:
@@ -452,8 +355,12 @@ nodes:
           - node_id: +typescript#9
             output_handle: texts
       - handle: outputDir
+        value:
+        schema_overrides:
+          - schema:
+              type: "null"
         from_flow:
-          - input_handle: outputDir
+          []
         from_node:
           []
     ignore: false
@@ -482,17 +389,17 @@ nodes:
             output_handle: audioAssets
       - handle: videoAssets
         from_node:
-          - node_id: +typescript#4
+          - node_id: generate-video-with-ai#1
             output_handle: videoAssets
     task:
       ui:
         default_width: 450
       inputs_def:
         - handle: videoAssets
+          description: Output
           json_schema:
             type: array
           nullable: false
-          description: Output
         - handle: outputDir
           json_schema:
             type: string
@@ -506,9 +413,11 @@ nodes:
               apiEndpoint:
                 enum:
                   - https://ark.cn-beijing.volces.com/api/v3
+                  - https://console.oomol.com/v1
                 ui:options:
                   labels:
                     - DOUBAO_VIDEO_BASE_URL
+                    - OOMOL_DOUBAO
               model:
                 enum:
                   - doubao-seedance-1-0-lite-i2v-250428
@@ -518,12 +427,6 @@ nodes:
               apiKey:
                 contentMediaType: oomol/secret
                 type: string
-              format:
-                enum:
-                  - mp4
-                ui:options:
-                  labels:
-                    - MP4
               size:
                 enum:
                   - 1280x720
@@ -600,6 +503,27 @@ nodes:
         from_node:
           - node_id: generate-audio-with-ai#1
             output_handle: audioAssets
+    ignore: false
+  - node_id: generate-video-with-ai#1
+    task: self::generate-video-with-ai
+    inputs_from:
+      - handle: outputDir
+        value: null
+        from_flow:
+          []
+        from_node:
+          []
+      - handle: config
+        from_flow:
+          - input_handle: videoConfig
+      - handle: durationList
+        from_node:
+          - node_id: +typescript#2
+            output_handle: durationList
+      - handle: imageAssets
+        from_node:
+          - node_id: generate-images-with-ai#1
+            output_handle: imageAssets
 inputs_def:
   - handle: scenes
     description: Output
@@ -655,12 +579,6 @@ inputs_def:
         apiKey:
           contentMediaType: oomol/secret
           type: string
-        format:
-          enum:
-            - png
-          ui:options:
-            labels:
-              - png
         size:
           enum:
             - 1024x1024
@@ -679,9 +597,11 @@ inputs_def:
         apiEndpoint:
           enum:
             - https://ark.cn-beijing.volces.com/api/v3
+            - https://console.oomol.com/v1
           ui:options:
             labels:
               - DOUBAO_VIDEO_BASE_URL
+              - OOMOL_DOUBAO
         model:
           enum:
             - doubao-seedance-1-0-lite-i2v-250428
@@ -691,12 +611,6 @@ inputs_def:
         apiKey:
           contentMediaType: oomol/secret
           type: string
-        format:
-          enum:
-            - mp4
-          ui:options:
-            labels:
-              - MP4
         size:
           enum:
             - 1280x720
@@ -741,12 +655,6 @@ inputs_def:
         apiKey:
           contentMediaType: oomol/secret
           type: string
-        format:
-          enum:
-            - mp3
-          ui:options:
-            labels:
-              - MP3
   - handle: outputDir
     json_schema:
       type: string

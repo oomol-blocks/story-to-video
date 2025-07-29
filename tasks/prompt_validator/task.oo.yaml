@@ -1,0 +1,22 @@
+ui:
+  default_width: 450
+inputs_def:
+  - handle: prompt
+    json_schema: &a1
+      type: string
+      ui:widget: text
+    nullable: false
+    description: 生成内容的提示词。可以根据模版来进行修改。
+outputs_def:
+  - handle: prompt
+    json_schema:
+      type: string
+      ui:widget: text
+    nullable: false
+executor:
+  name: nodejs
+  options:
+    entry: main.ts
+    spawn: false
+title: prompt validator
+icon: ":skill-icons:typescript:"

@@ -75,7 +75,7 @@ export class VideoProcessor extends FFmpegExecutor {
                 duration: videoInfo.duration,
                 resolution: config.size,
                 fileSize: videoInfo.fileSize,
-                format: config.format,
+                format: config.format || "mp4",
                 createdAt: new Date()
             };;
         } catch (error) {
@@ -189,7 +189,7 @@ export class VideoProcessor extends FFmpegExecutor {
                 duration: videoInfo.duration,
                 resolution: config.size,
                 fileSize: videoInfo.fileSize,
-                format: config.format,
+                format: config.format || "mp4",
                 createdAt: new Date()
             };
         } catch (error) {

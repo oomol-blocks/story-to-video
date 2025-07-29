@@ -32,13 +32,26 @@ export interface VideoGeneratorOutputs {
 }
 
 export class DoubaoVideoGenerator extends FFmpegExecutor {
-    // 暂不支持修改
-    private apiEndpoint: string = "https://ark.cn-beijing.volces.com/api/v3";
-    private model: string = "doubao-seedance-1-0-lite-i2v-250428";
-
+    private apiEndpoint: string;
+    private model: string;
     private apiKey: string;
     constructor(private context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>) {
         super();
+    }
+
+    private getApiPaths(apiEndpoint: string) {
+        if (apiEndpoint.includes('volces.com')) {
+            return {
+                createTask: `${apiEndpoint}/contents/generations/tasks`,
+                getTask: `${apiEndpoint}/contents/generations/tasks`
+            };
+        } else {
+            // 默认 OOMOL API
+            return {
+                createTask: `${apiEndpoint}/video/generations`,
+                getTask: `${apiEndpoint}/video/generations`
+            };
+        }
     }
 
     async generateVideoSegment(
@@ -47,6 +60,8 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         outputPath: string
     ): Promise<VideoAsset> {
         this.apiKey = config.apiKey;
+        this.apiEndpoint = config.apiEndpoint;
+        this.model = config.model;
 
         try {
             const videoUrl = await this.callVideoAPI(segment);
@@ -61,7 +76,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 duration: videoInfo.duration,
                 resolution: config.size,
                 fileSize: videoInfo.fileSize,
-                format: config.format,
+                format: config.format || "mp4",
                 createdAt: new Date()
             };
 
@@ -136,7 +151,9 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     }
 
     private async createDoubaoTask(request: any): Promise<any> {
-        const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks`, {
+        const paths = this.getApiPaths(this.apiEndpoint);
+
+        const response = await fetch(paths.createTask, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -154,11 +171,12 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     }
 
     private async pollTaskStatus(taskId: string): Promise<string> {
+        const paths = this.getApiPaths(this.apiEndpoint);
         const maxAttempts = 60;
         const pollInterval = 10000;
 
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            const response = await fetch(`${this.apiEndpoint}/contents/generations/tasks/${taskId}`, {
+            const response = await fetch(`${paths.getTask}/${taskId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.apiKey}`

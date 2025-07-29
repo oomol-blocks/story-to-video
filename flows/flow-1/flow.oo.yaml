@@ -28,12 +28,6 @@ nodes:
             apiKey:
               contentMediaType: oomol/secret
               type: string
-            format:
-              enum:
-                - png
-              ui:options:
-                labels:
-                  - png
             size:
               enum:
                 - 1024x1024
@@ -47,8 +41,7 @@ nodes:
         value:
           apiEndpoint: https://console.oomol.com/v1/images/generations
           model: doubao-seedream-3-0-t2i-250415
-          apiKey: ${{OO_SECRET:Custom,image_generator,image_generator}}
-          format: png
+          apiKey: ${{OO_SECRET:Custom,oomol,generator}}
           size: 720x1280
       - handle: videoConfig
         json_schema:
@@ -58,9 +51,11 @@ nodes:
             apiEndpoint:
               enum:
                 - https://ark.cn-beijing.volces.com/api/v3
+                - https://console.oomol.com/v1
               ui:options:
                 labels:
                   - DOUBAO_VIDEO_BASE_URL
+                  - OOMOL_DOUBAO
             model:
               enum:
                 - doubao-seedance-1-0-lite-i2v-250428
@@ -70,12 +65,6 @@ nodes:
             apiKey:
               contentMediaType: oomol/secret
               type: string
-            format:
-              enum:
-                - mp4
-              ui:options:
-                labels:
-                  - MP4
             size:
               enum:
                 - 1280x720
@@ -87,10 +76,9 @@ nodes:
                   - 720x720（1:1 - 720p）
                   - 720x1280（9:16 - 720p）
         value:
-          apiEndpoint: https://ark.cn-beijing.volces.com/api/v3
+          apiEndpoint: https://console.oomol.com/v1
           model: doubao-seedance-1-0-lite-i2v-250428
-          apiKey: ${{OO_SECRET:Custom,ARK_API_KEY,volcengine}}
-          format: mp4
+          apiKey: ${{OO_SECRET:Custom,oomol,generator}}
           size: 720x1280
       - handle: audioConfig
         json_schema:
@@ -126,22 +114,16 @@ nodes:
             apiKey:
               contentMediaType: oomol/secret
               type: string
-            format:
-              enum:
-                - mp3
-              ui:options:
-                labels:
-                  - MP3
         value:
           apiEndpoint: https://console.oomol.com/v1/audio/speech
           model: FunAudioLLM/CosyVoice2-0.5B
           voice: FunAudioLLM/CosyVoice2-0.5B:anna
-          apiKey: ${{OO_SECRET:Custom,image_generator,image_generator}}
-          format: mp3
+          apiKey: ${{OO_SECRET:Custom,oomol,generator}}
       - handle: outputDir
         json_schema:
           type: string
           ui:widget: dir
+        value: /oomol-driver/oomol-storage/output4
   - node_id: LLM#1
     title: "generateScript"
     inputs_from:
@@ -215,6 +197,7 @@ nodes:
           - schema:
               type: array
     task: llm::LLM
+    ignore: false
   - node_id: video_preview#1
     title: "Video preview #1"
     inputs_from:
@@ -295,4 +278,5 @@ nodes:
         from_node:
           - node_id: LLM#1
             output_handle: output
+    ignore: false
 title: converter

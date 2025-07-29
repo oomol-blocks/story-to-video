@@ -35,12 +35,6 @@ inputs_def:
         apiKey:
           contentMediaType: oomol/secret
           type: string
-        format:
-          enum:
-            - mp3
-          ui:options:
-            labels:
-              - MP3
     nullable: false
   - handle: outputDir
     json_schema:

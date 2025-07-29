@@ -106,7 +106,7 @@ export class CachedImageGenerator {
     ) {
         // 如果指定输出目录，则直接在指定目录中生成资源
         if (params.outputDir) {
-            const filePath = path.join(params.outputDir, 'image', `image_${prompt.id}.${params.config.format}`);
+            const filePath = path.join(params.outputDir, `image_${prompt.id}.${params.config.format || "png"}`);
 
             return await this.stepCache.executeStep(
                 `image-${prompt.id}`,
@@ -129,7 +129,7 @@ export class CachedImageGenerator {
                 // 创建文件管理记录
                 const managedFile = await this.imageFileManager.createImageFile(
                     prompt.id,
-                    params.config.format,
+                    params.config.format || "png",
                     prompt.content
                 );
 

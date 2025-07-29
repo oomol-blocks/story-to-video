@@ -38,12 +38,6 @@ inputs_def:
         apiKey:
           contentMediaType: oomol/secret
           type: string
-        format:
-          enum:
-            - png
-          ui:options:
-            labels:
-              - png
         size:
           enum:
             - 1024x1024

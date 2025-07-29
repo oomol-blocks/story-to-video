@@ -122,7 +122,7 @@ export class CachedAudioGenerator {
     ) {
         // 如果指定输出目录，则直接在指定目录中生成资源
         if (params.outputDir) {
-            const filePath = path.join(params.outputDir, 'audio', `${text.id}.${params.config.format}`);
+            const filePath = path.join(params.outputDir, `${text.id}.${params.config.format || "mp3"}`);
             return await this.stepCache.executeStep(
                 `audio-${text.id}`,
                 async () => await this.generator.generateAudio(text, params.config, filePath, startTime),
@@ -145,7 +145,7 @@ export class CachedAudioGenerator {
                 // 创建文件管理记录
                 const managedFile = await this.audioFileManager.createAudioFile(
                     text.id,
-                    params.config.format,
+                    params.config.format || "mp3",
                     text.content
                 );
 

@@ -71,7 +71,7 @@ export class ImageGenerator {
             prompt: prompt.content,
             style: prompt.style || config.style,
             fileSize: imageInfo.fileSize,
-            format: config.format,
+            format: config.format || "png",
             createdAt: new Date()
         };
     }

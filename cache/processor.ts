@@ -118,23 +118,8 @@ export class CachedVideoProcessor {
         source: SourceItem,
         params: VideoProcessorInputs
     ) {
-        if (params.outputDir) {
-            const outputPath = path.join(params.outputDir, 'video', `${source.id}.${params.config.format}`);
-
-            return await this.stepCache.executeStep(
-                `process-video-source-${source.id}`,
-                async () => await this.processor.processVideoSource(
-                    rawVideoAsset,
-                    source,
-                    params.config,
-                    outputPath
-                ),
-                `Process video source ${source.id}`
-            );
-        } else {
-            const { videoAsset } = await this.processVideoSourceWithFile(rawVideoAsset, source, params);
-            return videoAsset;
-        }
+        const { videoAsset } = await this.processVideoSourceWithFile(rawVideoAsset, source, params);
+        return videoAsset;
     }
 
     private async processVideoSourceWithFile(
@@ -147,7 +132,7 @@ export class CachedVideoProcessor {
             async () => {
                 const processedManagedFile = await this.videoFileManager.createTempVideoFile(
                     `processing-${source.id}`,
-                    params.config.format
+                    params.config.format || "mp4"
                 );
 
                 try {
@@ -186,10 +171,15 @@ export class CachedVideoProcessor {
             'merge-processed-videos',
             async () => {
                 this.context.reportLog('Merging processed video sources...', 'stdout');
-
                 if (params.outputDir) {
-                    const outputPath = path.join(params.outputDir, 'video', `merged_video.${params.config.format}`);
-                    const fileListPath = path.join(params.outputDir, 'video', `filelist.txt`);
+                    // 使用临时路径
+                    const processedManagedFileList = await this.videoFileManager.createTempVideoFile(
+                        `filelist`,
+                        "txt"
+                    );
+
+                    const outputPath = path.join(params.outputDir, `merged_video.${params.config.format || "mp4"}`);
+                    const fileListPath = processedManagedFileList.tempPath;
                     return await this.processor.mergeVideoSources(videoAssets, params.config, outputPath, fileListPath);
                 } else {
                     this.context.reportLog('output Dir is required', 'stderr')

@@ -2,7 +2,7 @@
 type Inputs = {
     scenes: { id: string; description: string; narration: string; visualPrompt: string; estimatedDuration: number }[];
     sceneMetadata: { historicalPeriod: string; characterTraits: string; baseImageStyle: string };
-    imageConfig: { apiEndpoint: "https://ark.cn-beijing.volces.com/api/v3/images/generations" | "https://console.oomol.com/v1/images/generations"; model: "doubao-seedream-3-0-t2i-250415"; apiKey: string; format: "png"; size: "1024x1024" | "720x1280" | "1280x720" };
+    imageConfig: { apiEndpoint: "https://ark.cn-beijing.volces.com/api/v3/images/generations" | "https://console.oomol.com/v1/images/generations"; model: "doubao-seedream-3-0-t2i-250415"; apiKey: string; size: "1024x1024" | "720x1280" | "1280x720" };
 };
 type Outputs = {
     prompts: { id: string; content: string }[];

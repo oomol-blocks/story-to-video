@@ -54,6 +54,7 @@ export interface SubtitleConfig {
 export interface VideoConfig {
     apiEndpoint: string;
     apiKey: string;
+    model: string;
     size: string;
     // frameRate: number;
     // codec: 'h264' | 'h265';

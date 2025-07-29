@@ -120,7 +120,7 @@ export class CachedVideoGenerator {
         params: VideoGeneratorInputs
     ) {
         if (params.outputDir) {
-            const tempPath = path.join(params.outputDir, 'video', `temp_video_${segment.id}.${params.config.format}`);
+            const tempPath = path.join(params.outputDir, `temp_video_${segment.id}.${params.config.format || "mp4"}`);
 
             return await this.stepCache.executeStep(
                 `video-segment-${segment.id}`,
@@ -148,7 +148,7 @@ export class CachedVideoGenerator {
                 // 创建临时视频文件管理记录
                 const tempManagedFile = await this.videoFileManager.createTempVideoFile(
                     segment.id,
-                    params.config.format
+                    params.config.format || "mp4"
                 );
 
                 try {

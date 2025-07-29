@@ -3,7 +3,6 @@ import * as fs from "node:fs/promises";
 
 import { AudioConfig, MediaAsset, TimingInfo } from "../utils/constants";
 import { FFmpegExecutor } from "./FFmpegExcutor";
-
 export interface AudioAsset extends MediaAsset {
     id: string;
     timing: TimingInfo;
@@ -33,11 +32,14 @@ export class AudioGenerator extends FFmpegExecutor {
 
     async generateAudio(
         text: { id: string; content: string; },
-        config: AudioConfig,
+        // 默认为 "mp3，暂不支持用户传入
+        { format = "mp3", ...otherConfig }: AudioConfig,
         outputPath: string,
         startTime: number
     ): Promise<AudioAsset> {
         this.context.reportLog(`Generating audio for text: ${text.content}`, "stdout");
+
+        const config = { ...otherConfig, format };
 
         // 调用API生成音频
         await this.callAudioAPI(text.content, config, outputPath);

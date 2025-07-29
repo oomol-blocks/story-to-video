@@ -3,7 +3,7 @@
   <p><a href="./README.md">中文</a> | English</p>
 </div>
 
-An intelligent video generation tool built on OOMOL Blocks, integrating multiple AI services to automatically generate complete videos with images, audio, and subtitles from text scripts. Supports caching mechanisms and resume functionality to ensure stable and reliable generation process.
+An intelligent video generation tool built on OOMOL Blocks, using multiple AI services integrated by OOMOL to automatically generate complete videos with images, audio, and subtitles from text scripts. Features caching mechanisms and resume capability to ensure stable and reliable generation process.
 
 ## ✨ Features
 
@@ -11,7 +11,7 @@ An intelligent video generation tool built on OOMOL Blocks, integrating multiple
 - 🖼️ **AI Image Generation**: OOMOL AI automatically generates scene images
 - 🎵 **AI Speech Synthesis**: OOMOL AI automatically converts narration to high-quality speech
 - 📝 **Intelligent Subtitles**: Automatically generate subtitles
-- 🎥 **Video Segment Generation**: Doubao AI converts images to videos
+- 🎥 **Video Segment Generation**: OOMOL AI converts images to video
 - ⚡ **Caching Mechanism**: Built-in caching system with resume functionality
 - 📁 **File Management**: Temporary file management and automatic cleanup
 
@@ -66,40 +66,39 @@ You need to configure the following API services before use:
 
 ```typescript
 const config = {
-  // Image generation API (OOMOL)
+  // Image generation API
   imageConfig: {
     apiKey: "your-oomol-api-key",
     apiEndpoint: "https://console.oomol.com/v1/images/generations",
     model: "doubao-seedream-3-0-t2i-250415"
   },
     
-  // Audio generation API (OOMOL)
+  // Audio generation API
   audioConfig: {
     apiKey: "your-oomol-api-key",
     apiEndpoint: "https://console.oomol.com/v1/audio/speech",
-    model: "FunAudioLLM/CosyVoice2-0.5B"
+    model: "FunAudioLLM/CosyVoice2-0.5B",
+    voice: "FunAudioLLM/CosyVoice2-0.5B:anna"
   },
   
-  // Video generation API (Doubao, Doubao-Seedance-1.0-lite-i2v model)
+  // Video generation API
   videoConfig: {
-    apiKey: "your-doubao-api-key"
+    apiKey: "your-oomol-api-key",
+    apiEndpoint: "https://console.oomol.com/v1",
+    model: "doubao-seedance-1-0-lite-i2v-25042"
   }
 };
 ```
 
-### API Service Application
-
-#### OOMOL AI (Image Generation, Audio Generation)
+### Get API Key Generation Links
 
 * `imageConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
   * Model: Doubao-Seedream-3.0-T2I
+* `videoConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
+  * Model: doubao-seedance-1-0-lite-i2v-25042
 * `audioConfig.apiKey`: [API Key Generation URL](https://console.oomol.com/panel/api-key)
   * Model: FunAudioLLM/CosyVoice2-0.5B
 
-#### Doubao AI (Video Generation)
-
-* `videoConfig.apiKey`: [API Key Generation URL](https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D)
-* Enable Model: [Doubao-Seedance-1.0-lite-i2v](https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false&tab=ComputerVision)
 
 ## 🆘 Support
 

@@ -1,4 +1,4 @@
-version: 0.0.12
+version: 0.0.13
 scripts:
   bootstrap: |
     npm install
@@ -11,4 +11,4 @@ name: story-to-video
 description: AI 视频生成工具
 displayName: story-to-video
 repository: https://github.com/oomol-blocks/story-to-video
-releaseNotes: using OOMOL AI to generate video
+releaseNotes: clear outputDir

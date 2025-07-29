@@ -17,7 +17,7 @@ export interface SubtitleGeneratorInputs {
         sentences?: string[];
         timing: TimingInfo;
     }>;
-    outputDir: string;
+    outputDir?: string;
 }
 
 export interface SubtitleGeneratorOutputs {
@@ -28,28 +28,6 @@ export class SubtitleGenerator {
     private readonly maxLineLength = 12; // 每行的最大字符数
 
     constructor(private context: Context<SubtitleGeneratorInputs, SubtitleGeneratorOutputs>) { }
-
-    async generateSubtitles(
-        params: SubtitleGeneratorInputs,
-        config: SubtitleConfig
-    ): Promise<SubtitleGeneratorOutputs> {
-        this.context.reportLog('Generating subtitles...', "stdout");
-
-        const { texts, outputDir } = params;
-        const subtitleAssets: SubtitleAsset[] = [];
-
-        for (let i = 0; i < texts.length; i++) {
-            const text = texts[i];
-            this.context.reportLog(`Generating subtitle ${i + 1}/${texts.length}`, "stdout");
-
-            const subtitleAsset = await this.generateSubtitle(text, config, outputDir);
-            subtitleAssets.push(subtitleAsset);
-
-            this.context.reportProgress((i + 1) / texts.length * 100);
-        }
-
-        return { subtitleAssets };
-    }
 
     async generateSubtitle(
         text: { id: string; content: string; sentences?: string[]; timing: TimingInfo },

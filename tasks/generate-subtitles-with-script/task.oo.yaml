@@ -4,6 +4,8 @@ inputs_def:
   - handle: outputDir
     json_schema:
       {}
+    value:
+    nullable: true
   - handle: texts
     description: Output
     json_schema:

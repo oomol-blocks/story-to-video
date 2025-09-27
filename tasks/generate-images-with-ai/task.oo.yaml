@@ -2,7 +2,7 @@ ui:
   default_width: 450
 inputs_def:
   - handle: prompts
-    description: Output
+    description: Array of text prompts with id and content to be converted into images
     json_schema:
       type: array
       items:
@@ -17,6 +17,8 @@ inputs_def:
       - {}
     nullable: false
   - handle: config
+    description: Configuration for AI image generation including API endpoint,
+      model, size, and authentication settings
     json_schema:
       type: object
       additionalProperties: false
@@ -50,6 +52,7 @@ inputs_def:
               - 1280x720（16:9）
     nullable: false
   - handle: outputDir
+    description: Directory path where generated image files will be saved
     json_schema:
       type: string
       ui:widget: dir
@@ -57,7 +60,8 @@ inputs_def:
     nullable: true
 outputs_def:
   - handle: imageAssets
-    description: Output
+    description: Generated image files with metadata including file paths and image
+      properties
     json_schema:
       type: array
       items:
@@ -70,3 +74,5 @@ executor:
     spawn: false
 title: Generate Images With AI
 icon: ":fa6-solid:images:"
+description: Generates images from text prompts using AI image generation models
+  with configurable size and style options

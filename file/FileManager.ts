@@ -46,20 +46,20 @@ export interface FileManagerState {
 }
 
 export interface IFileManager {
-    // 核心文件操作
+    // Core file operations
     createTempFile(type: FileType, filename: string, metadata?: Record<string, any>): Promise<ManagedFile>;
     moveToFinal(fileId: string, finalPath: string): Promise<void>;
     updateFileStatus(fileId: string, status: FileStatus): Promise<void>;
     getFile(fileId: string): ManagedFile | null;
 
-    // 路径管理
+    // Path management
     getTempPath(type: FileType, filename: string): string;
     getFinalPath(outputDir: string, filename: string): string;
     ensureDirectory(dir: string): Promise<void>;
 
     cleanup(fileIds?: string[]): Promise<{ cleaned: string[], failed: string[] }>;
 
-    // 统计信息
+    // Statistics
     getFilesStatistics(): FileStatistics;
 }
 
@@ -106,7 +106,7 @@ export class FileManager implements IFileManager {
 
             this.state = loadedState;
 
-            // 重建 Map
+            // Rebuild Map
             this.files.clear();
             for (const [id, file] of Object.entries(this.state.files)) {
                 this.files.set(id, file);
@@ -131,23 +131,23 @@ export class FileManager implements IFileManager {
     }
 
     private setupCacheEventListeners(cacheManager: CacheManager): void {
-        // 监听块无效化事件
+        // Listen to block invalidation events
         const blockInvalidatedListener = async ({ blockId, fileIds }: { blockId: string, fileIds: string[] }) => {
             this.context.reportLog(`Handling file cleanup for invalidated block ${blockId}: ${fileIds.length} files`, "stdout");
             await this.cleanup(fileIds);
         };
 
-        // 监听缓存清理事件
+        // Listen to cache clearing events
         const cacheClaredListener = async ({ fileIds }: { fileIds: string[] }) => {
             this.context.reportLog(`Handling file cleanup for cache clear: ${fileIds.length} files`, "stdout");
             await this.cleanup(fileIds);
         };
 
-        // 注册监听器
+        // Register listeners
         cacheManager.on('cache:block:invalidated', blockInvalidatedListener);
         cacheManager.on('cache:cleared', cacheClaredListener);
 
-        // 保存监听器引用以便后续移除
+        // Save listener references for later removal
         this.eventListeners.push(
             { event: 'cache:block:invalidated', listener: blockInvalidatedListener },
             { event: 'cache:cleared', listener: cacheClaredListener }
@@ -171,7 +171,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 创建临时文件记录
+     * Create temporary file record
      */
     async createTempFile(type: FileType, filename: string, metadata?: Record<string, any>): Promise<ManagedFile> {
         if (!this.isInitialized) {
@@ -201,7 +201,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 移动文件到最终位置
+     * Move file to final location
      */
     async moveToFinal(fileId: string, finalPath: string): Promise<void> {
         const file = this.files.get(fileId);
@@ -212,12 +212,12 @@ export class FileManager implements IFileManager {
         await this.ensureDirectory(path.dirname(finalPath));
 
         try {
-            // 如果临时文件存在，移动它；否则假设文件已经在正确位置
+            // If temp file exists, move it; otherwise assume file is already in correct location
             try {
                 await fs.access(file.tempPath);
                 await fs.rename(file.tempPath, finalPath);
             } catch {
-                // 临时文件不存在，检查目标文件是否存在
+                // Temp file doesn't exist, check if target file exists
                 await fs.access(finalPath);
             }
 
@@ -237,7 +237,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 更新文件状态
+     * Update file status
      */
     async updateFileStatus(fileId: string, status: FileStatus): Promise<void> {
         const file = this.files.get(fileId);
@@ -252,28 +252,28 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 获取文件信息
+     * Get file information
      */
     getFile(fileId: string): ManagedFile | null {
         return this.files.get(fileId) || null;
     }
 
     /**
-     * 获取临时路径
+     * Get temporary path
      */
     getTempPath(type: FileType, filename: string): string {
         return path.join(this.tempDir, type, filename);
     }
 
     /**
-     * 获取最终路径
+     * Get final path
      */
     getFinalPath(outputDir: string, filename: string): string {
         return path.join(outputDir, filename);
     }
 
     /**
-     * 确保目录存在
+     * Ensure directory exists
      */
     async ensureDirectory(dir: string): Promise<void> {
         try {
@@ -284,7 +284,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 清理文件
+     * Clean up files
      */
     async cleanup(fileIds?: string[]): Promise<{ cleaned: string[], failed: string[] }> {
         const targetIds = fileIds || Array.from(this.files.keys());
@@ -294,7 +294,7 @@ export class FileManager implements IFileManager {
         for (const fileId of targetIds) {
             const file = this.files.get(fileId);
             if (!file) {
-                // 文件不存在，可能已经被清理或者是重启后的遗留ID
+                // File doesn't exist, may have been cleaned up or is a leftover ID after restart
                 this.context.reportLog(`Warning: File not found for cleanup: ${fileId}`, "stderr");
                 failed.push(fileId);
                 continue;
@@ -303,24 +303,24 @@ export class FileManager implements IFileManager {
             try {
                 await this.updateFileStatus(fileId, FileStatus.CLEANING);
 
-                // 清理临时文件
+                // Clean up temporary files
                 if (file.tempPath) {
                     try {
                         await fs.unlink(file.tempPath);
                         this.context.reportLog(`✓ Deleted temp file: ${path.basename(file.tempPath)}`, "stdout");
                     } catch {
-                        // 临时文件可能已经不存在
+                        // Temp file may already be deleted
                         this.context.reportLog(`Temp file already deleted: ${path.basename(file.tempPath || '')}`, "stdout");
                     }
                 }
 
-                // 清理最终文件
+                // Clean up final files
                 if (file.finalPath) {
                     try {
                         await fs.unlink(file.finalPath);
                         this.context.reportLog(`✓ Deleted final file: ${path.basename(file.finalPath)}`, "stdout");
                     } catch {
-                        // 最终文件可能已经不存在
+                        // Final file may not exist
                         this.context.reportLog(`Final file already deleted: ${path.basename(file.finalPath || '')}`, "stdout");
                     }
                 }
@@ -345,7 +345,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 获取文件统计
+     * Get file statistics
      */
     getFilesStatistics(): FileStatistics {
         const allFiles = Array.from(this.files.values());
@@ -353,11 +353,11 @@ export class FileManager implements IFileManager {
         const byType = {} as Record<FileType, number>;
         const byStatus = {} as Record<FileStatus, number>;
 
-        // 初始化计数器
+        // Initialize counters
         Object.values(FileType).forEach(type => byType[type] = 0);
         Object.values(FileStatus).forEach(status => byStatus[status] = 0);
 
-        // 统计
+        // Count statistics
         allFiles.forEach(file => {
             byType[file.type]++;
             byStatus[file.status]++;
@@ -374,14 +374,14 @@ export class FileManager implements IFileManager {
 
     async clearAllFiles(): Promise<void> {
         try {
-            // 清理所有文件
+            // Clean up all files
             await this.cleanup();
 
-            // 清理临时目录
+            // Clean up temp directory
             const tempSubDir = path.join(this.tempDir, 'temp');
             await fs.rm(tempSubDir, { recursive: true, force: true });
 
-            // 重置状态
+            // Reset state
             this.files.clear();
             this.state = {
                 files: {},
@@ -398,7 +398,7 @@ export class FileManager implements IFileManager {
     }
 
     /**
-     * 生成唯一文件ID
+     * Generate unique file ID
      */
     private generateFileId(type: FileType, filename: string): string {
         const timestamp = Date.now();
@@ -407,7 +407,7 @@ export class FileManager implements IFileManager {
     }
 
     async destroy(): Promise<void> {
-        // 移除事件监听器
+        // Remove event listeners
         this.removeEventListeners();
 
         await this.saveState();

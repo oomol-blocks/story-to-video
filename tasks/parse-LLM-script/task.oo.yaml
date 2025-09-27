@@ -2,16 +2,19 @@ ui:
   default_width: 450
 inputs_def:
   - handle: content
-    description: Input
+    description: Raw text content from LLM to be parsed into structured scene format
     json_schema:
       type: string
     nullable: true
 outputs_def:
   - handle: scenes
-    description: Output
+    description: Parsed array of scene objects with descriptions, narration, and
+      visual prompts
     json_schema:
       type: array
   - handle: metadata
+    description: Extracted metadata including historical period, character traits,
+      and base image style
     json_schema:
       type: object
       additionalProperties: false
@@ -29,3 +32,5 @@ executor:
     spawn: false
 title: Parse LLM Script
 icon: ":twemoji:cricket-game:"
+description: Parses LLM-generated scripts into structured scene data with
+  metadata including character traits and visual style information

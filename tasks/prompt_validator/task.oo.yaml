@@ -6,9 +6,11 @@ inputs_def:
       type: string
       ui:widget: text
     nullable: false
-    description: 生成内容的提示词。可以根据模版来进行修改。
+    description: Input prompt text for content generation that can be modified based
+      on templates
 outputs_def:
   - handle: prompt
+    description: Validated and processed prompt text ready for AI content generation
     json_schema:
       type: string
       ui:widget: text
@@ -20,3 +22,5 @@ executor:
     spawn: false
 title: prompt validator
 icon: ":skill-icons:typescript:"
+description: Validates and processes user prompts to ensure they meet formatting
+  and content requirements for AI generation

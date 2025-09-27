@@ -19,7 +19,7 @@ export interface MediaAsset extends BaseAsset {
 export interface AudioConfig {
     apiEndpoint: string;
     apiKey: string;
-    // 根据模型内部判断，不暴露给用户
+    // Determined by model internally, not exposed to user
     requestFormat: 'form' | 'json'
     model: string;
     voice: string;
@@ -32,7 +32,7 @@ export interface AudioConfig {
 export interface ImageConfig {
     apiEndpoint: string;
     apiKey: string;
-    // 根据模型自行判断，不暴露给用户
+    // Determined by model automatically, not exposed to user
     requestFormat: 'form' | 'json'
     model: string;
     size: string;

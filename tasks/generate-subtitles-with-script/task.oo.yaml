@@ -2,12 +2,14 @@ ui:
   default_width: 450
 inputs_def:
   - handle: outputDir
+    description: Directory path where generated subtitle files will be saved
     json_schema:
       {}
     value:
     nullable: true
   - handle: texts
-    description: Output
+    description: Array of text objects with id, content, and timing information for
+      subtitle generation
     json_schema:
       type: array
       items:
@@ -23,6 +25,7 @@ inputs_def:
     nullable: false
 outputs_def:
   - handle: subtitleAssets
+    description: Generated subtitle files with timing and content information
     json_schema:
       type: array
 executor:
@@ -32,3 +35,5 @@ executor:
     spawn: false
 title: Generate Subtitles with Script
 icon: ":fa6-solid:marker:"
+description: Generates subtitle files from text content with timing information
+  for video synchronization

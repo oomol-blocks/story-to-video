@@ -2,6 +2,8 @@ ui:
   default_width: 450
 inputs_def:
   - handle: config
+    description: Configuration for AI audio generation including API endpoint,
+      model, voice, and authentication settings
     json_schema:
       type: object
       additionalProperties: false
@@ -37,12 +39,13 @@ inputs_def:
           type: string
     nullable: false
   - handle: outputDir
+    description: Directory path where generated audio files will be saved
     json_schema:
       {}
     value:
     nullable: true
   - handle: texts
-    description: Output
+    description: Array of text objects with id and content to be converted to audio
     json_schema:
       type: array
       items:
@@ -56,7 +59,8 @@ inputs_def:
     nullable: false
 outputs_def:
   - handle: audioAssets
-    description: Output
+    description: Generated audio files with metadata including file paths and audio
+      properties
     json_schema:
       type: array
       items:
@@ -69,4 +73,5 @@ executor:
     spawn: false
 title: Generate Audio With AI
 icon: ":fa6-solid:file-audio:"
-description: 使用 AI 生成语音
+description: Generates audio from text using AI-powered text-to-speech models
+  with configurable voice options and API endpoints

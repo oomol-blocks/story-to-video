@@ -1,6 +1,6 @@
 import { FileType, IFileManager, ManagedFile } from "./FileManager";
 
-// Audio/Image/Subtitle/Video 文件管理
+// Audio/Image/Subtitle/Video file management
 export class AudioFileManager {
     constructor(private fileManager: IFileManager) { }
 
@@ -12,7 +12,7 @@ export class AudioFileManager {
         );
     }
 
-    // 如果用户已经输入 outputDir，则将文件复制到目标目录下
+    // If user has already provided outputDir, copy files to the target directory
     async finalizeAudioFile(fileId: string, outputDir: string, textId: string, format: string): Promise<void> {
         const finalPath = this.fileManager.getFinalPath(outputDir, `audio_${textId}.${format}`);
         await this.fileManager.moveToFinal(fileId, finalPath);

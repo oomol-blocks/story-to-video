@@ -1,3 +1,6 @@
+title: "AI Video Processor"
+description: "Comprehensive video processing subflow that transforms scenes into
+  complete videos with AI-generated images, audio, and subtitles"
 nodes:
   - node_id: +typescript#6
     title: "formatTranscript"
@@ -45,13 +48,13 @@ nodes:
         value:
           - role: system
             content: |-
-              对以下数组中每个项的 transcript 按句号（。）、问号（？）、感叹号（！）切割成句子。不修改任何文本内容。
+              Split the transcript of each item in the following array by periods (.), question marks (?), and exclamation marks (!). Do not modify any text content.
 
-              输入：{{scriptList}}
+              Input: {{scriptList}}
 
-              要求：只输出 JSON 字符串，不要任何其他内容，不要代码块标记，不要解释。
+              Requirements: Only output JSON string, no other content, no code block markers, no explanations.
 
-              输出格式：[{"id":"xxx","sentences":["句子1","句子2"]}]
+              Output format: [{"id":"xxx","sentences":["sentence1","sentence2"]}]
         schema_overrides:
           - schema:
               type: array
@@ -446,7 +449,8 @@ nodes:
             output_handle: videoAssets
 inputs_def:
   - handle: scenes
-    description: Output
+    description: "Array of scene objects containing narration, visual prompts, and
+      duration data for video generation"
     json_schema:
       type: array
       items:
@@ -467,6 +471,8 @@ inputs_def:
       - {}
     nullable: false
   - handle: sceneMetadata
+    description: "Metadata for scene generation including historical period,
+      character traits, and image style preferences"
     json_schema:
       type: object
       additionalProperties: false
@@ -478,6 +484,8 @@ inputs_def:
         baseImageStyle:
           type: string
   - handle: imageConfig
+    description: "Configuration for AI image generation including API endpoint,
+      model, and output size settings"
     json_schema:
       type: object
       additionalProperties: false
@@ -510,6 +518,8 @@ inputs_def:
               - 720x1280（9:16）
               - 1280x720（16:9）
   - handle: videoConfig
+    description: "Configuration for AI video generation including API endpoint,
+      model, and video resolution settings"
     json_schema:
       type: object
       additionalProperties: false
@@ -542,6 +552,8 @@ inputs_def:
               - 720x720（1:1 - 720p）
               - 720x1280（9:16 - 720p）
   - handle: audioConfig
+    description: "Configuration for AI audio/speech generation including voice
+      selection and API settings"
     json_schema:
       type: object
       additionalProperties: false
@@ -576,13 +588,15 @@ inputs_def:
           contentMediaType: oomol/secret
           type: string
   - handle: outputDir
+    description: "Directory path where generated video files and assets will be saved"
     json_schema:
       type: string
       ui:widget: dir
     nullable: false
 outputs_def:
   - handle: mergedVideoAsset
-    description: Output
+    description: "Final merged video asset containing file path, duration,
+      resolution, and size information"
     json_schema:
       type: object
       additionalProperties: false

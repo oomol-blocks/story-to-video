@@ -15,7 +15,7 @@
               "[]": true
             },
             "imageConfig": {
-              "[]": true
+              "[]": false
             },
             "videoConfig": {
               "[]": false
@@ -28,15 +28,11 @@
       }
     },
     "LLM#1": {
+      "contentWidth": 350,
       "rfNode": {
         "position": {
           "x": 397.47605564667293,
           "y": -372.0074585978409
-        }
-      },
-      "sections": {
-        "inputHandle": {
-          "cardCollapsed": true
         }
       }
     },

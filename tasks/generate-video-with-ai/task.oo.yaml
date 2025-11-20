@@ -2,7 +2,7 @@ ui:
   default_width: 450
 inputs_def:
   - handle: imageAssets
-    description: Output
+    description: Array of image assets to be converted into video content
     json_schema:
       type: array
       items:
@@ -10,6 +10,8 @@ inputs_def:
         additionalProperties: false
     nullable: false
   - handle: config
+    description: Configuration for AI video generation including API endpoint,
+      model, size, and authentication settings
     json_schema:
       type: object
       additionalProperties: false
@@ -28,7 +30,8 @@ inputs_def:
       size: 1280x720
     nullable: true
   - handle: durationList
-    description: Output
+    description: Array of duration objects specifying the length for each generated
+      video segment
     json_schema:
       type: array
       items:
@@ -37,13 +40,15 @@ inputs_def:
     value:
     nullable: true
   - handle: outputDir
+    description: Directory path where generated video files will be saved
     json_schema:
       type: string
       ui:widget: dir
     nullable: true
 outputs_def:
   - handle: videoAssets
-    description: Output
+    description: Generated video files with metadata including file paths and video
+      properties
     json_schema:
       type: array
 executor:
@@ -53,3 +58,5 @@ executor:
     spawn: false
 title: Generate Video With AI
 icon: ":carbon:video-filled:"
+description: Generates videos from images using AI video generation models with
+  configurable duration and resolution settings

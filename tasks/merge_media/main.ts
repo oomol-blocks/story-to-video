@@ -38,7 +38,7 @@ const mergeVideoWithCache = withCache(
         if (!_params.config?.format) {
             _params.config.format = "mp4";
         }
-        return await processor.processVideo(params, sources, resumeData);
+        return await processor.processVideo(_params, sources, resumeData);
     }
 );
 

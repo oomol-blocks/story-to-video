@@ -23,21 +23,15 @@ export default async function(
     }
 
     try {
-        // 检查文件夹是否存在
+        // check if the video file exists
         const stats = await fs.stat(folderPath);
         if (!stats.isDirectory()) {
             throw new Error(`Path is not a directory: ${folderPath}`);
         }
 
-        // 读取文件夹中的所有文件
+        // read all files in the folder
         const files = await fs.readdir(folderPath);
-
-        console.log('files: ', files)
-
         const imagePaths = files.map(file => path.join(folderPath, file));
-
-        console.log('imagePaths: ', imagePaths)
-
 
         if (imagePaths.length === 0) {
             context.reportLog(`No image files found in folder: ${folderPath}`, "stdout");

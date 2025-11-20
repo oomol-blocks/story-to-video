@@ -53,16 +53,14 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         config: VideoConfig,
         outputPath: string
     ): Promise<VideoAsset> {
-        // 获取 OOMOL Token
+        // use OOMOL Token
         this.apiKey = await this.context.getOomolToken();
-
-        console.log(segment, config, this.apiKey)
 
         try {
             const videoUrl = await this.callVideoAPI(segment, config);
             await this.downloadVideo(videoUrl, outputPath);
 
-            // 获取视频信息
+            // get the duration of the downloaded video
             const videoInfo = await this.getVideoInfo(outputPath);
 
             const videoAsset: VideoAsset = {
@@ -155,8 +153,6 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
 
     private async createDoubaoTask(request: any): Promise<any> {
         const paths = this.getApiPaths(this.apiEndpoint);
-
-        console.log('----', paths.createTask, request)
 
         const response = await fetch(paths.createTask, {
             method: 'POST',

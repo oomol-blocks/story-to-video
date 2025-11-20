@@ -6,11 +6,13 @@ import { VideoConfig } from "../utils/constants";
 import { AudioAsset } from "./AudioGenerator";
 import { SubtitleAsset } from "./SubtitleGenerator";
 
+export type VideoMergeConfig = Pick<VideoConfig, "format" | "size">
+
 export interface VideoProcessorInputs {
     videoAssets: VideoAsset[]; // 视频段
     audioAssets?: AudioAsset[]; // 可能的音频资源
     subtitleAssets?: SubtitleAsset[]; // 可能的字幕资源
-    config: VideoConfig;
+    config?: VideoMergeConfig;
     outputDir: string;
 }
 
@@ -41,7 +43,7 @@ export class VideoProcessor extends FFmpegExecutor {
     async processVideoSource(
         rawVideoAsset: VideoAsset,
         source: SourceItem,
-        config: VideoConfig,
+        config: VideoMergeConfig,
         outputPath: string
     ): Promise<VideoAsset> {
         this.context.reportLog(`Processing video segment with audio and subtitles`, "stdout");
@@ -90,7 +92,7 @@ export class VideoProcessor extends FFmpegExecutor {
         inputVideoPath: string,
         source: SourceItem,
         outputPath: string,
-        config: VideoConfig
+        config: VideoMergeConfig
     ): Promise<void> {
         const resolution = config.size.replace('x', ':');
         const hasAudio = Boolean(source.audioAsset?.filePath);
@@ -150,7 +152,7 @@ export class VideoProcessor extends FFmpegExecutor {
         inputVideoPath: string,
         source: SourceItem,
         outputPath: string,
-        config: VideoConfig
+        config: VideoMergeConfig
     ): Promise<void> {
         const resolution = config.size.replace('x', ':');
 
@@ -172,7 +174,7 @@ export class VideoProcessor extends FFmpegExecutor {
     // 合并多个视频段
     async mergeVideoSources(
         videoAssets: VideoAsset[],
-        config: VideoConfig,
+        config: VideoMergeConfig,
         outputPath: string,
         fileListPath: string
     ): Promise<VideoAsset> {
@@ -200,7 +202,7 @@ export class VideoProcessor extends FFmpegExecutor {
     private async runFFmpegMerge(
         videoAssets: VideoAsset[],
         outputPath: string,
-        config: VideoConfig,
+        config: VideoMergeConfig,
         providedFileListPath: string
     ): Promise<void> {
         if (videoAssets.length === 0) {

@@ -1,0 +1,30 @@
+{
+  "nodes": {
+    "upload-to-cloud#1": {
+      "rfNode": {
+        "position": {
+          "x": 593.7865049567089,
+          "y": -500
+        }
+      }
+    }
+  },
+  "pseudoNodes": {
+    "input": {
+      "rfNode": {
+        "position": {
+          "x": 0,
+          "y": -500
+        }
+      }
+    },
+    "output": {
+      "rfNode": {
+        "position": {
+          "x": 1167.4025500910745,
+          "y": -500
+        }
+      }
+    }
+  }
+}

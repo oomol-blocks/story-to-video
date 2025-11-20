@@ -1,5 +1,6 @@
 import type { Context } from "@oomol/types/oocana";
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 
 import { FFmpegExecutor } from "./FFmpegExcutor";
 import { ImageAsset } from "./ImageGenarator";
@@ -32,26 +33,19 @@ export interface VideoGeneratorOutputs {
 }
 
 export class DoubaoVideoGenerator extends FFmpegExecutor {
-    private apiEndpoint: string;
-    private model: string;
+    private apiEndpoint = "https://llm.oomol.com/v1";
+    private model = "doubao-seedance-1-0-lite-i2v-250428";
     private apiKey: string;
+
     constructor(private context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>) {
         super();
     }
 
     private getApiPaths(apiEndpoint: string) {
-        if (apiEndpoint.includes('volces.com')) {
-            return {
-                createTask: `${apiEndpoint}/contents/generations/tasks`,
-                getTask: `${apiEndpoint}/contents/generations/tasks`
-            };
-        } else {
-            // 默认 OOMOL API
-            return {
-                createTask: `${apiEndpoint}/video/generations`,
-                getTask: `${apiEndpoint}/video/generations`
-            };
-        }
+        return {
+            createTask: `${apiEndpoint}/video/generations`,
+            getTask: `${apiEndpoint}/video/generations`
+        };
     }
 
     async generateVideoSegment(
@@ -59,12 +53,13 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         config: VideoConfig,
         outputPath: string
     ): Promise<VideoAsset> {
-        this.apiKey = config.apiKey;
-        this.apiEndpoint = config.apiEndpoint;
-        this.model = config.model;
+        // 获取 OOMOL Token
+        this.apiKey = await this.context.getOomolToken();
+
+        console.log(segment, config, this.apiKey)
 
         try {
-            const videoUrl = await this.callVideoAPI(segment);
+            const videoUrl = await this.callVideoAPI(segment, config);
             await this.downloadVideo(videoUrl, outputPath);
 
             // 获取视频信息
@@ -74,7 +69,7 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 id: segment.id,
                 filePath: outputPath,
                 duration: videoInfo.duration,
-                resolution: config.size,
+                resolution: config.size || "1280x720",
                 fileSize: videoInfo.fileSize,
                 format: config.format || "mp4",
                 createdAt: new Date()
@@ -86,10 +81,14 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
     }
 
-    private async callVideoAPI(segment: Segment): Promise<string> {
+    private async callVideoAPI(segment: Segment, config: VideoConfig): Promise<string> {
         try {
             const duration = Math.ceil(segment.duration);
             const prompt = `${segment.imageAsset.prompt} --rs 720p --dur ${duration}`;
+
+            const firstUrl = segment.imageAsset.url.startsWith("http")
+                ? segment.imageAsset.url
+                : await this.convertImageToBase64(segment.imageAsset.url);
 
             const content = [
                 {
@@ -99,17 +98,21 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
                 {
                     type: "image_url",
                     image_url: {
-                        url: segment.imageAsset.url
+                        url: firstUrl
                     },
                     role: "first_frame"
                 }
             ];
 
             if (segment.nextImageAsset) {
+                const secondUrl = segment.nextImageAsset.url.startsWith("http")
+                    ? segment.nextImageAsset.url
+                    : await this.convertImageToBase64(segment.nextImageAsset.url);
+
                 content.push({
                     type: "image_url",
                     image_url: {
-                        url: segment.nextImageAsset.url
+                        url: secondUrl
                     },
                     role: "last_frame"
                 });
@@ -153,6 +156,8 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
     private async createDoubaoTask(request: any): Promise<any> {
         const paths = this.getApiPaths(this.apiEndpoint);
 
+        console.log('----', paths.createTask, request)
+
         const response = await fetch(paths.createTask, {
             method: 'POST',
             headers: {
@@ -168,6 +173,30 @@ export class DoubaoVideoGenerator extends FFmpegExecutor {
         }
 
         return await response.json();
+    }
+
+    private async convertImageToBase64(imagePath: string): Promise<string> {
+        try {
+            const buffer = await fs.readFile(imagePath);
+            const ext = path.extname(imagePath).toLowerCase().substring(1);
+
+            // 确定 MIME 类型
+            const mimeTypes: Record<string, string> = {
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'webp': 'image/webp',
+                'bmp': 'image/bmp'
+            };
+
+            const mimeType = mimeTypes[ext] || 'image/jpeg';
+            const base64 = buffer.toString('base64');
+
+            return `data:${mimeType};base64,${base64}`;
+        } catch (error) {
+            throw new Error(`Failed to convert image to base64: ${error.message}`);
+        }
     }
 
     private async pollTaskStatus(taskId: string): Promise<string> {

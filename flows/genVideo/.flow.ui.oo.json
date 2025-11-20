@@ -1,0 +1,88 @@
+{
+  "nodes": {
+    "generate-video-with-ai#1": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 1757.918269542073,
+          "y": 184.7161496080195
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "imageAssets": {
+              "[0]": false
+            }
+          }
+        }
+      }
+    },
+    "+value#1": {
+      "contentWidth": 415,
+      "rfNode": {
+        "position": {
+          "x": -681,
+          "y": 165
+        }
+      }
+    },
+    "+typescript#1": {
+      "contentWidth": 537.4653491533943,
+      "rfNode": {
+        "position": {
+          "x": -161,
+          "y": 165
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "map#1": {
+      "rfNode": {
+        "position": {
+          "x": 547.9561919189498,
+          "y": 165
+        }
+      }
+    },
+    "+typescript#2": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 1151.4269039754229,
+          "y": 165
+        }
+      },
+      "sections": {
+        "scriptlet": {
+          "cardCollapsed": true
+        }
+      }
+    },
+    "merge_media#1": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 2385.0262619799023,
+          "y": 184.7161496080195
+        }
+      },
+      "sections": {
+        "inputs": {
+          "collapsed": {
+            "audioAssets": {
+              "[]": true
+            },
+            "subtitleAssets": {
+              "[]": true
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -28,6 +28,16 @@ const mergeVideoWithCache = withCache(
         }
 
         const processor = new CachedVideoProcessor(context, cacheManager, BLOCK_ID);
+
+        const _params = { ...params }
+
+        if (!_params.config?.size) {
+            _params.config.size = "1280x720";
+        }
+        
+        if (!_params.config?.format) {
+            _params.config.format = "mp4";
+        }
         return await processor.processVideo(params, sources, resumeData);
     }
 );

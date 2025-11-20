@@ -2,6 +2,7 @@
   "private": true,
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
-    "@ffprobe-installer/ffprobe": "^2.1.2"
+    "@ffprobe-installer/ffprobe": "^2.1.2",
+    "image-size": "^2.0.2"
   }
 }

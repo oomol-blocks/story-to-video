@@ -132,7 +132,7 @@ export class CachedVideoProcessor {
             async () => {
                 const processedManagedFile = await this.videoFileManager.createTempVideoFile(
                     `processing-${source.id}`,
-                    params.config.format || "mp4"
+                    params.config?.format || "mp4"
                 );
 
                 try {

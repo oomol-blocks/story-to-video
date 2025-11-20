@@ -1,0 +1,13 @@
+nodes:
+  - node_id: upload-to-cloud#1
+    title: "Upload File to Cloud #1"
+    inputs_from:
+      - handle: file
+        from_flow:
+          - input_handle: item
+    task: upload-to-cloud::upload-to-cloud
+outputs_from:
+  - handle: item
+    from_node:
+      - node_id: upload-to-cloud#1
+        output_handle: remote_url

@@ -1,13 +1,15 @@
 ui:
   default_width: 450
 inputs_def:
-  - handle: imageAssets
+  - handle: videoAssets
     description: Output
     json_schema:
       type: array
-      items:
-        type: object
-        additionalProperties: false
+    nullable: false
+  - handle: outputDir
+    json_schema:
+      type: string
+      ui:widget: dir
     nullable: false
   - handle: config
     json_schema:
@@ -24,32 +26,47 @@ inputs_def:
               - 1280x720（16:9 - 720p）
               - 720x720（1:1 - 720p）
               - 720x1280（9:16 - 720p）
+        format:
+          enum:
+            - mp4
+          ui:options:
+            labels:
+              - mp4
     value:
       size: 1280x720
+      format: mp4
     nullable: true
-  - handle: durationList
+  - handle: audioAssets
     description: Output
     json_schema:
       type: array
       items:
         type: object
         additionalProperties: false
-    value:
     nullable: true
-  - handle: outputDir
-    json_schema:
-      type: string
-      ui:widget: dir
-    nullable: true
-outputs_def:
-  - handle: videoAssets
-    description: Output
+  - handle: subtitleAssets
     json_schema:
       type: array
+    nullable: true
+outputs_def:
+  - handle: mergedVideoAsset
+    description: Output
+    json_schema:
+      type: object
+      additionalProperties: false
+      properties:
+        filePath:
+          type: string
+        duration:
+          type: number
+        resolution:
+          type: string
+        fileSize:
+          type: number
 executor:
   name: nodejs
   options:
     entry: main.ts
     spawn: false
-title: Generate Video With AI
-icon: ":carbon:video-filled:"
+title: Merge Sources
+icon: ":skill-icons:typescript:"

@@ -364,112 +364,6 @@ nodes:
         from_node:
           []
     ignore: false
-  - node_id: +typescript#1
-    title: Merge Sources
-    icon: ":skill-icons:typescript:"
-    inputs_from:
-      - handle: outputDir
-        value: /oomol-driver/oomol-storage
-        from_flow:
-          - input_handle: outputDir
-        from_node:
-          []
-      - handle: config
-        from_flow:
-          - input_handle: videoConfig
-      - handle: subtitleAssets
-        value:
-        from_node:
-          - node_id: generate-subtitles-with-script#1
-            output_handle: subtitleAssets
-      - handle: audioAssets
-        value:
-        from_node:
-          - node_id: generate-audio-with-ai#1
-            output_handle: audioAssets
-      - handle: videoAssets
-        from_node:
-          - node_id: generate-video-with-ai#1
-            output_handle: videoAssets
-    task:
-      ui:
-        default_width: 450
-      inputs_def:
-        - handle: videoAssets
-          description: Output
-          json_schema:
-            type: array
-          nullable: false
-        - handle: outputDir
-          json_schema:
-            type: string
-            ui:widget: dir
-          nullable: false
-        - handle: config
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              apiEndpoint:
-                enum:
-                  - https://ark.cn-beijing.volces.com/api/v3
-                  - https://console.oomol.com/v1
-                ui:options:
-                  labels:
-                    - DOUBAO_VIDEO_BASE_URL
-                    - OOMOL_DOUBAO
-              model:
-                enum:
-                  - doubao-seedance-1-0-lite-i2v-250428
-                ui:options:
-                  labels:
-                    - DOUBAO_SEEDANCE
-              apiKey:
-                contentMediaType: oomol/secret
-                type: string
-              size:
-                enum:
-                  - 1280x720
-                  - 720x720
-                  - 720x1280
-                ui:options:
-                  labels:
-                    - 1280x720（16:9 - 720p）
-                    - 720x720（1:1 - 720p）
-                    - 720x1280（9:16 - 720p）
-          nullable: false
-        - handle: audioAssets
-          description: Output
-          json_schema:
-            type: array
-            items:
-              type: object
-              additionalProperties: false
-          nullable: true
-        - handle: subtitleAssets
-          json_schema:
-            type: array
-          nullable: true
-      outputs_def:
-        - handle: mergedVideoAsset
-          description: Output
-          json_schema:
-            type: object
-            additionalProperties: false
-            properties:
-              filePath:
-                type: string
-              duration:
-                type: number
-              resolution:
-                type: string
-              fileSize:
-                type: number
-      executor:
-        name: nodejs
-        options:
-          entry: scriptlets/+scriptlet#10.ts
-          spawn: false
   - node_id: +typescript#2
     title: "Generate video duration list"
     icon: ":skill-icons:typescript:"
@@ -524,6 +418,32 @@ nodes:
         from_node:
           - node_id: generate-images-with-ai#1
             output_handle: imageAssets
+  - node_id: merge_media#1
+    task: self::merge_media
+    inputs_from:
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage
+        from_flow:
+          - input_handle: outputDir
+        from_node:
+          []
+      - handle: config
+        from_flow:
+          - input_handle: videoConfig
+      - handle: subtitleAssets
+        value: null
+        from_node:
+          - node_id: generate-subtitles-with-script#1
+            output_handle: subtitleAssets
+      - handle: audioAssets
+        value: null
+        from_node:
+          - node_id: generate-audio-with-ai#1
+            output_handle: audioAssets
+      - handle: videoAssets
+        from_node:
+          - node_id: generate-video-with-ai#1
+            output_handle: videoAssets
 inputs_def:
   - handle: scenes
     description: Output
@@ -679,5 +599,5 @@ outputs_def:
 outputs_from:
   - handle: mergedVideoAsset
     from_node:
-      - node_id: +typescript#1
+      - node_id: merge_media#1
         output_handle: mergedVideoAsset

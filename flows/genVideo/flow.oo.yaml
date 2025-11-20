@@ -1,0 +1,125 @@
+title: gen-video
+nodes:
+  - node_id: generate-video-with-ai#1
+    title: "Generate Video With AI #1"
+    inputs_from:
+      - handle: imageAssets
+        value:
+          - {}
+        from_node:
+          - node_id: +typescript#2
+            output_handle: imageAssets
+      - handle: config
+        value:
+          size: 1280x720
+      - handle: durationList
+        value: null
+      - handle: outputDir
+        value: /oomol-driver/downloads
+        from_node:
+          - node_id: +value#1
+            output_handle: outputDir
+    task: self::generate-video-with-ai
+  - node_id: +value#1
+    title: "Value #1"
+    values:
+      - handle: value
+        json_schema:
+          type: string
+          ui:widget: dir
+        value: /oomol-driver/oomol-storage/images
+      - handle: outputDir
+        json_schema:
+          type: string
+          ui:widget: dir
+        value: /oomol-driver/oomol-storage/images
+  - node_id: +typescript#1
+    title: "TypeScript #1"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: value
+          json_schema:
+            type: string
+            ui:widget: dir
+          nullable: false
+      outputs_def:
+        - handle: imagePaths
+          json_schema:
+            type: array
+            items:
+              type: string
+          nullable: false
+          description: Output
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#1.ts
+    inputs_from:
+      - handle: value
+        from_node:
+          - node_id: +value#1
+            output_handle: value
+  - node_id: map#1
+    title: "Map #1"
+    inputs_from:
+      - handle: array
+        from_node:
+          - node_id: +typescript#1
+            output_handle: imagePaths
+    subflow: array::map
+    slots:
+      - slot_node_id: +slot#2
+        slotflow: self::+slotflow#1
+  - node_id: +typescript#2
+    title: "TypeScript #2"
+    icon: ":skill-icons:typescript:"
+    task:
+      ui:
+        default_width: 450
+      inputs_def:
+        - handle: array
+          json_schema:
+            type: array
+          nullable: false
+      outputs_def:
+        - handle: imageAssets
+          json_schema:
+            type: array
+            items:
+              type: object
+              additionalProperties: false
+          nullable: false
+          description: Output
+      executor:
+        name: nodejs
+        options:
+          entry: scriptlets/+scriptlet#2.ts
+    inputs_from:
+      - handle: array
+        from_node:
+          - node_id: map#1
+            output_handle: array
+  - node_id: merge_media#1
+    title: "Merge Sources #1"
+    inputs_from:
+      - handle: videoAssets
+        from_node:
+          - node_id: generate-video-with-ai#1
+            output_handle: videoAssets
+      - handle: outputDir
+        value: /oomol-driver/oomol-storage/images
+        from_node:
+          - node_id: +value#1
+            output_handle: outputDir
+      - handle: config
+        value:
+          size: 1280x720
+          format: mp4
+      - handle: audioAssets
+        value:
+      - handle: subtitleAssets
+        value:
+    task: self::merge_media

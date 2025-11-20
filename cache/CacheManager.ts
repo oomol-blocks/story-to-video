@@ -394,9 +394,9 @@ export class CacheManager extends EventEmitter {
 
 export function withCache<TInputs, TOutputs>(
     blockId: string,
-    blockFunction: (params: TInputs, context: Context<TInputs, TOutputs>, cacheManager: CacheManager, resumeData?: any) => Promise<TOutputs>
+    blockFunction: (params: TInputs, context, cacheManager: CacheManager, resumeData?: any) => Promise<TOutputs>
 ) {
-    return async (params: TInputs, context: Context<TInputs, TOutputs>): Promise<TOutputs> => {
+    return async (params: TInputs, context): Promise<TOutputs> => {
         const cacheManager = new CacheManager(context, blockId);
         await cacheManager.initialize();
 

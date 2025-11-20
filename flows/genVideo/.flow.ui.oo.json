@@ -4,8 +4,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 1757.918269542073,
-          "y": 184.7161496080195
+          "x": 1028.7250397254215,
+          "y": 199.7161496080195
         }
       },
       "sections": {
@@ -13,6 +13,12 @@
           "collapsed": {
             "imageAssets": {
               "[0]": false
+            },
+            "durationList": {
+              "[]": true
+            },
+            "config": {
+              "[]": true
             }
           }
         }
@@ -44,22 +50,8 @@
     "map#1": {
       "rfNode": {
         "position": {
-          "x": 547.9561919189498,
+          "x": 481.59549125083856,
           "y": 165
-        }
-      }
-    },
-    "+typescript#2": {
-      "contentWidth": 450,
-      "rfNode": {
-        "position": {
-          "x": 1151.4269039754229,
-          "y": 165
-        }
-      },
-      "sections": {
-        "scriptlet": {
-          "cardCollapsed": true
         }
       }
     },
@@ -67,8 +59,8 @@
       "contentWidth": 450,
       "rfNode": {
         "position": {
-          "x": 2385.0262619799023,
-          "y": 184.7161496080195
+          "x": 1602.0262619799023,
+          "y": 199.7161496080195
         }
       },
       "sections": {
@@ -78,6 +70,9 @@
               "[]": true
             },
             "subtitleAssets": {
+              "[]": true
+            },
+            "config": {
               "[]": true
             }
           }

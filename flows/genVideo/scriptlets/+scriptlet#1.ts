@@ -31,7 +31,10 @@ export default async function(
 
         // read all files in the folder
         const files = await fs.readdir(folderPath);
-        const imagePaths = files.map(file => path.join(folderPath, file));
+        const imagePaths = files.map(file => path.join(folderPath, file)).filter(i => {
+            const ext = path.extname(i).toLocaleLowerCase();
+            return ext === '.png' || ext === '.jpg' || ext === '.jpeg';
+        });
 
         if (imagePaths.length === 0) {
             context.reportLog(`No image files found in folder: ${folderPath}`, "stdout");

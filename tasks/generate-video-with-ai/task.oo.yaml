@@ -1,13 +1,12 @@
 ui:
   default_width: 450
 inputs_def:
-  - handle: imageAssets
+  - handle: imageList
     description: Array of image assets to be converted into video content
     json_schema:
       type: array
       items:
-        type: object
-        additionalProperties: false
+        type: string
     nullable: false
   - handle: config
     description: Configuration for AI video generation including API endpoint,

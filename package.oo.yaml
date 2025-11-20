@@ -1,4 +1,4 @@
-version: 0.0.15
+version: 0.0.18
 scripts:
   bootstrap: |
     npm install
@@ -13,4 +13,4 @@ name: story-to-video
 description: AI 视频生成工具
 displayName: story-to-video
 repository: https://github.com/oomol-blocks/story-to-video
-releaseNotes: use oomol token to generate video
+releaseNotes: remove test data

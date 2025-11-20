@@ -117,52 +117,6 @@
         }
       }
     },
-    "+typescript#1": {
-      "contentWidth": 450,
-      "rfNode": {
-        "position": {
-          "x": 5413.20698444577,
-          "y": 95.7509484191688
-        }
-      },
-      "sections": {
-        "inputs": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "assets": {
-              "[]": true
-            },
-            "imageAssets": {
-              "[]": true
-            },
-            "config": {
-              "[]": true
-            },
-            "audioAssets": {
-              "[]": true
-            },
-            "subtitleAssets": {
-              "[]": true
-            }
-          }
-        },
-        "outputs": {
-          "collapsed": {
-            "videoAsset": {
-              "[]": true
-            },
-            "mergedVideoAsset": {
-              "[]": true
-            }
-          }
-        },
-        "scriptlet": {
-          "cardCollapsed": true
-        }
-      }
-    },
     "+typescript#2": {
       "contentWidth": 450,
       "rfNode": {
@@ -185,6 +139,15 @@
           "y": -278.0352419830413
         }
       }
+    },
+    "merge_media#1": {
+      "contentWidth": 450,
+      "rfNode": {
+        "position": {
+          "x": 5413.20698444577,
+          "y": 95.7509484191688
+        }
+      }
     }
   },
   "pseudoNodes": {
@@ -194,27 +157,6 @@
         "position": {
           "x": -1469.6653855754075,
           "y": 229.68985360675833
-        }
-      },
-      "sections": {
-        "subflowInput": {
-          "collapsed": {
-            "scenes": {
-              "[]": true
-            },
-            "sceneMetadata": {
-              "[]": true
-            },
-            "imageConfig": {
-              "[]": true
-            },
-            "videoConfig": {
-              "[]": true
-            },
-            "audioConfig": {
-              "[]": true
-            }
-          }
         }
       }
     },

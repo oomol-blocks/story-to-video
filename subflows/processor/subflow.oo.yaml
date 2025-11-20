@@ -417,7 +417,7 @@ nodes:
         from_node:
           - node_id: +typescript#2
             output_handle: durationList
-      - handle: imageAssets
+      - handle: imageList
         from_node:
           - node_id: generate-images-with-ai#1
             output_handle: imageAssets

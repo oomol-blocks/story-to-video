@@ -1,15 +1,15 @@
 ui:
   default_width: 450
 inputs_def:
-  - handle: videoAssets
-    description: Output
-    json_schema:
-      type: array
-    nullable: false
   - handle: outputDir
     json_schema:
       type: string
       ui:widget: dir
+    nullable: false
+  - handle: videoAssets
+    description: Output
+    json_schema:
+      type: array
     nullable: false
   - handle: config
     json_schema:
@@ -68,5 +68,5 @@ executor:
   options:
     entry: main.ts
     spawn: false
-title: Merge Sources
+title: Merge Video
 icon: ":skill-icons:typescript:"

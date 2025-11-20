@@ -5,50 +5,45 @@ import { CachedVideoGenerator } from "~/cache/video";
 
 const BLOCK_ID = "generate-video-with-ai";
 
+type VideoGeneratorParams = Omit<VideoGeneratorInputs, "imageAssets"> & { imageList: string[] };
+
 const generateVideoWithCache = withCache(
     BLOCK_ID,
     async (
-        params: VideoGeneratorInputs,
+        params: VideoGeneratorParams,
         context: Context<VideoGeneratorInputs, VideoGeneratorOutputs>,
         cacheManager: CacheManager,
         resumeData?: any
     ): Promise<VideoGeneratorOutputs> => {
-        const { imageAssets } = params;
+
+        const { imageList } = params
         let { durationList } = params;
 
-        // 补全 imageAsset 的默认属性
-        for (const imageAsset of imageAssets) {
-            // 补全尺寸
-            if (!imageAsset.width || !imageAsset.height) {
-                const { width, height } = await getImageWidthAndHeight(imageAsset.url);
-                if (!imageAsset.width) {
-                    imageAsset.width = width;
-                }
-                if (!imageAsset.height) {
-                    imageAsset.height = height;
-                }
-            }
-            
-            // 补全其他默认属性
-            if (!imageAsset.id) {
-                imageAsset.id = `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            }
-            if (!imageAsset.prompt) {
-                imageAsset.prompt = "";
-            }
-            if (!imageAsset.style) {
-                imageAsset.style = "";
-            }
-            if (!imageAsset.filePath) {
-                imageAsset.filePath = "";
-            }
-            if (!imageAsset.format) {
-                imageAsset.format = "png";
-            }
-            if (!imageAsset.createdAt) {
-                imageAsset.createdAt = new Date();
-            }
+        if (!imageList || !imageList.length) {
+            throw new Error("imageList is required")
         }
+
+        const imageAssets = await Promise.all(
+            imageList
+                .sort() // 按文件名排序
+                .map(async (filePath, index) => {
+                    const ext = filePath.split('.').pop();
+                    const { width, height } = await getImageWidthAndHeight(filePath);
+
+                    return {
+                        id: `image_${index + 1}`,
+                        url: filePath,
+                        filePath: filePath,
+                        fileSize: null,
+                        width,
+                        height,
+                        format: ext === 'jpg' ? 'jpeg' : ext,
+                        prompt: "",
+                        style: "",
+                        createdAt: new Date()
+                    };
+                })
+        );
 
         // 补全 durationList，默认每段 5 秒
         if (!durationList || durationList.length === 0) {
@@ -71,7 +66,8 @@ const generateVideoWithCache = withCache(
         }
 
         const generator = new CachedVideoGenerator(context, cacheManager, BLOCK_ID);
-        return await generator.generateVideo(params, segments, resumeData);
+        const _params = { ...params, imageAssets } as VideoGeneratorInputs;
+        return await generator.generateVideo(_params, segments, resumeData);
     }
 );
 
